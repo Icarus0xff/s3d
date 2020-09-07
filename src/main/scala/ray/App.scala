@@ -3,17 +3,11 @@ package ray
 import java.awt.Color
 import java.io.File
 
-import ray.App.Shadow.Shadow
-
 object App{
 
   val INF: Double = 1000000000000f
 
-  object Shadow extends Enumeration{
-    type Shadow = Value
-    val Shadow, BackColor, Color = Value
-  }
-
+  
   val height = 1 to 700 toArray
   val width = 1 to 700 toArray
 
@@ -43,18 +37,14 @@ object App{
 
     ps.foreach {
       x =>
-        x._3 match {
-          case Shadow.BackColor => newBufferedImage.setRGB(x._1, x._2, Color.WHITE.getRGB)
-          case Shadow.Color => newBufferedImage.setRGB(x._1, x._2, Color.GREEN.getRGB)
-          case Shadow.Shadow => newBufferedImage.setRGB(x._1, x._2, Color.BLACK.getRGB)
-        }
+        newBufferedImage.setRGB(x._1, x._2, x._3.getRGB)
     }
 
     import javax.imageio.ImageIO
     ImageIO.write(newBufferedImage, "BMP", file)
   }
 
-  private def render(pixs: Array[(Int, Int)], eye: Vec3f, sphere: Sphere): Array[(Int, Int, Shadow)] = {
+  private def render(pixs: Array[(Int, Int)], eye: Vec3f, sphere: Sphere): Array[(Int, Int, Color)] = {
     pixs.map {
       curPix =>
 
@@ -67,13 +57,17 @@ object App{
           case (true, near, far) =>
             val pHit = rayDir + near
             val rd = light.center - pHit
+            val lightDir = rd norm
 
-            val ir = sphere.intersect(pHit, rd.norm())
+            val ir = sphere.intersect(pHit, lightDir)
             ir match {
-              case (true, _, _) => Shadow.Shadow
-              case (false, _, _) => Shadow.Color
+              case (true, _, _) => Color.BLACK
+              case (false, _, _) => {
+                Color.GREEN
+
+              }
             }
-          case _ => Shadow.BackColor
+          case _ => Color.WHITE
         }
 
         (curPix._1, curPix._2, shadow)
