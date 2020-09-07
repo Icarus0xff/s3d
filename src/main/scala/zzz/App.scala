@@ -28,6 +28,7 @@ object App{
 
     val eye = Vec3f(width.size / 2, height.size / 2, -100f)
     val sphere = Sphere(Vec3f(width.size / 2, height.size / 2, 100f), 64f)
+    val light = Sphere(Vec3f(width.size / 3, height.size / 3, 100f), 2f)
 
 
     val ps = pixs.map {
@@ -36,10 +37,24 @@ object App{
         val rayDir = computeRay(eye, curPix, sphere, height.size, width.size)
         println(s"raydir: $rayDir")
 
-        val rs = sphere.intersect(eye, rayDir)
+        val intersectResult = sphere.intersect(eye, rayDir)
 
+        val z = intersectResult match {
+          case (true, d) =>
+            val pHit = rayDir + d
+            val rd = light.center - pHit
 
-        (curPix._1, curPix._2, rs)
+            val ir = sphere.intersect(pHit, rd.norm())
+
+            if (ir._1) {
+              (false, 0)
+            } else {
+              (true, 0)
+            }
+          case _ => intersectResult
+        }
+        
+        (curPix._1, curPix._2, z)
     }
 
     val file = new File("pic1.bmp")
@@ -50,8 +65,8 @@ object App{
     ps.foreach {
       x =>
         x._3 match {
-          case true => newBufferedImage.setRGB(x._1, x._2, Color.GREEN.getRGB)
-          case false => newBufferedImage.setRGB(x._1, x._2, Color.WHITE.getRGB)
+          case (true, _) => newBufferedImage.setRGB(x._1, x._2, Color.GREEN.getRGB)
+          case (false, _) => newBufferedImage.setRGB(x._1, x._2, Color.WHITE.getRGB)
         }
     }
 
@@ -75,6 +90,8 @@ object App{
     def -(that: Vec3f) = Vec3f(this.x - that.x, this.y - that.y, this.z - that.z)
 
     def +(that: Vec3f) = Vec3f(this.x + that.x, this.y + that.y, this.z + that.z)
+
+    def +(that: Double) = Vec3f(this.x + that, this.y + that, this.z + that)
 
     def *(that: Vec3f) = Vec3f(this.x * that.x, this.y * that.y, this.z * that.z)
 
@@ -104,17 +121,18 @@ object App{
     val radius2: Double = radius * radius
     val falseR = IntersectResult(false, INF, INF)
 
-    def intersect(o: Vec3f, u: Vec3f): Boolean = {
+    def intersect(o: Vec3f, u: Vec3f): (Boolean, Double) = {
       val t = o - center
-      val ∇ = Math.pow((u dot (o - center)), 2) - (t.dot(t) - radius2)
+      val ∇ = Math.pow((u dot t), 2) - (t.dot(t) - radius2)
 
-      println(s"∇: ${∇}")
+      val d = -(u dot t) + ∇
+      println(s"∇: ${∇} d: $d")
+
 
       if (∇ >= 0) {
-
-        true
+        (true, d)
       } else {
-        false
+        (false, d)
       }
     }
 
