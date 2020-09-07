@@ -7,6 +7,18 @@ object App{
 
   val INF: Double = 1000000000000f
 
+  object Shadow extends Enumeration{
+    type Shadow = Value
+    val Shadow, BackColor, Color = Value
+  }
+
+  val height = 1 to 400 toArray
+  val width = 1 to 400 toArray
+
+  val eye = Vec3f(width.size / 2, height.size / 2, -100f)
+  val sphere = Sphere(Vec3f(width.size / 2, height.size / 2, 100f), 64f)
+  val light = Sphere(Vec3f(width.size / 3, height.size / 3, 100f), 2f)
+
   def main(args: Array[String]): Unit = {
 
 
@@ -15,8 +27,6 @@ object App{
   }
 
   private def rayTrace = {
-    val height = 1 to 400 toArray
-    val width = 1 to 400 toArray
 
 
     val pixs = for {
@@ -26,12 +36,28 @@ object App{
       (h, w)
     }
 
-    val eye = Vec3f(width.size / 2, height.size / 2, -100f)
-    val sphere = Sphere(Vec3f(width.size / 2, height.size / 2, 100f), 64f)
-    val light = Sphere(Vec3f(width.size / 3, height.size / 3, 100f), 2f)
+
+    val ps = render(pixs, eye, sphere)
+
+    val file = new File("pic1.bmp")
+    import java.awt.image.BufferedImage
+    val newBufferedImage = new BufferedImage(800, 800, BufferedImage.TYPE_INT_RGB)
 
 
-    val ps = pixs.map {
+    ps.foreach {
+      x =>
+        x._3 match {
+          case (true, _) => newBufferedImage.setRGB(x._1, x._2, Color.GREEN.getRGB)
+          case (false, _) => newBufferedImage.setRGB(x._1, x._2, Color.WHITE.getRGB)
+        }
+    }
+
+    import javax.imageio.ImageIO
+    ImageIO.write(newBufferedImage, "BMP", file)
+  }
+
+  private def render(pixs: Array[(Int, Int)], eye: Vec3f, sphere: Sphere) = {
+    pixs.map {
       curPix =>
 
         val rayDir = computeRay(eye, curPix, sphere, height.size, width.size)
@@ -53,25 +79,9 @@ object App{
             }
           case _ => intersectResult
         }
-        
+
         (curPix._1, curPix._2, z)
     }
-
-    val file = new File("pic1.bmp")
-    import java.awt.image.BufferedImage
-    val newBufferedImage = new BufferedImage(800, 800, BufferedImage.TYPE_INT_RGB)
-
-
-    ps.foreach {
-      x =>
-        x._3 match {
-          case (true, _) => newBufferedImage.setRGB(x._1, x._2, Color.GREEN.getRGB)
-          case (false, _) => newBufferedImage.setRGB(x._1, x._2, Color.WHITE.getRGB)
-        }
-    }
-
-    import javax.imageio.ImageIO
-    ImageIO.write(newBufferedImage, "BMP", file)
   }
 
   private def computeRay(eye: Vec3f, yx: (Int, Int), s: Sphere, m: Int, k: Int) = {
