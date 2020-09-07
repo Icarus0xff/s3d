@@ -13,7 +13,7 @@ object App{
 
   val eye = Vec3f(width.size / 2, height.size / 2, -800f)
   val sphere = Sphere(Vec3f(200, 200, 0f), 128f)
-  val light = Sphere(Vec3f(500, 200, 300f), 1f)
+  val light = Sphere(Vec3f(500, 200, -100f), 10)
 
   def main(args: Array[String]): Unit = {
     rayTrace
@@ -30,7 +30,7 @@ object App{
 
     val ps = render(pixs, eye, sphere)
 
-    val file = new File("pic1.bmp")
+    val file = new File("pic2.bmp")
     import java.awt.image.BufferedImage
     val newBufferedImage = new BufferedImage(800, 800, BufferedImage.TYPE_INT_RGB)
 
@@ -39,8 +39,22 @@ object App{
         newBufferedImage.setRGB(x._2, x._1, x._3.getRGB)
     }
 
+
     import javax.imageio.ImageIO
     ImageIO.write(newBufferedImage, "BMP", file)
+
+
+    val file1 = new File("pic3.bmp")
+    import java.awt.image.BufferedImage
+    val newBufferedImage1 = new BufferedImage(800, 800, BufferedImage.TYPE_INT_RGB)
+
+    ps.filter(x => x._3.getRed != 255 && x._3.getBlue != 255 && x._3.getGreen != 255).foreach {
+      x =>
+        newBufferedImage1.setRGB(x._2, x._1, x._3.getRGB)
+    }
+
+    import javax.imageio.ImageIO
+    ImageIO.write(newBufferedImage1, "BMP", file1)
   }
 
   private def render(pixs: Array[(Int, Int)], eye: Vec3f, sphere: Sphere): Array[(Int, Int, Color)] = {
@@ -53,44 +67,45 @@ object App{
 
         val shadow = intersectResult match {
           case (true, near, far) =>
-            val pHit = eye + (rayDir * near)
-            val shadowDir = (pHit - light.center) norm
+            val pHit = eye + (rayDir * far)
+            val shadowDir = (light.center - pHit) norm
 
             val ir = sphere.intersect(pHit, shadowDir)
             ir match {
-              case (true, _, _) => Color.BLACK
+              case (true, _, _) =>
+                //println(s"shadowDir: $shadowDir pHit:$pHit, near: $near, rayDirNear: ${rayDir * near},rayDirFar: ${rayDir * far},rayDir: $rayDir, eye: $eye, far: $far")
+                new Color(0, 0, 255)
               case (false, _, _) => {
-                val ambientStrength = 0.1
-                val lightColor = Vec3f(128, 128, 128)
+                val ambientStrength = .01
+                val lightColor = Vec3f(255, 255, 255)
                 val ambient = lightColor * ambientStrength
 
-                val norm = (sphere.center - pHit) norm
+                val norm = (pHit - sphere.center) norm
                 val lightDir = (light.center - pHit) norm
                 val diff = Math.max(lightDir dot norm, 0)
                 val diffuse = lightColor * diff
 
-                println(pHit)
 
+                val specularStrength = 0.7
 
-                val specularStrength = 0.5
-
-                val viewDir = (eye - pHit) norm
+                val viewDir = (pHit - eye) norm
                 val reflectDir = norm * (2 * (lightDir dot norm)) - lightDir
 
                 val spec = Math.pow(Math.max(viewDir dot reflectDir, 0.0), 32)
                 val specular = lightColor * (specularStrength * spec)
 
-                val result = (ambient + diffuse + specular) * Vec3f(0, 0.5, 0.6)
-                val result1 = (result norm) * lightColor
-
+                val result = (ambient + diffuse) * Vec3f(.7, .7, .7)
 
                 println(s"res: $result ambient: $ambient diffuse: $diffuse specular: $specular")
-                //System.exit(1)
-                new Color(result.x.toInt % 256, result.y.toInt % 256, result.z.toInt % 256)
 
+                //val c = new Color(result.x.toInt % 256, result.y.toInt % 256, result.z.toInt % 256)
+                val c = new Color(result.x.toInt, result.y.toInt, result.z.toInt)
+
+
+                c
               }
             }
-          case _ => Color.WHITE
+          case _ => new Color(255, 255, 0)
         }
 
         (curPix._1, curPix._2, shadow)
@@ -152,7 +167,7 @@ object App{
 
 
       if (∇ > 0) {
-        (true, d - ∇, d + ∇)
+        (true, d + ∇, d - ∇)
       } else if (∇ == 0) {
         (true, d, d)
       } else {
