@@ -7,13 +7,13 @@ object App{
 
   val INF: Double = 1000000000000f
 
-  
+
   val height = 1 to 700 toArray
   val width = 1 to 700 toArray
 
   val eye = Vec3f(width.size / 2, height.size / 2, -10000f)
-  val sphere = Sphere(Vec3f(width.size / 2, height.size / 2, 100f), 80f)
-  val light = Sphere(Vec3f(width.size, height.size, 10f), 1f)
+  val sphere = Sphere(Vec3f(width.size / 2, height.size / 3, 100f), 80f)
+  val light = Sphere(Vec3f(width.size, height.size, 0f), 1f)
 
   def main(args: Array[String]): Unit = {
     rayTrace
@@ -49,21 +49,45 @@ object App{
       curPix =>
 
         val rayDir = computeRay(eye, curPix, sphere, height.size, width.size)
-        println(s"raydir: $rayDir")
 
         val intersectResult = sphere.intersect(eye, rayDir)
 
         val shadow = intersectResult match {
           case (true, near, far) =>
-            val pHit = rayDir + near
-            val rd = light.center - pHit
-            val lightDir = rd norm
+            val pHit = eye + (rayDir * near)
+            val shadowDir = (pHit - light.center) norm
 
-            val ir = sphere.intersect(pHit, lightDir)
+            val ir = sphere.intersect(pHit, shadowDir)
             ir match {
               case (true, _, _) => Color.BLACK
               case (false, _, _) => {
-                Color.GREEN
+                val ambientStrength = 0.1
+                val lightColor = Vec3f(128, 128, 128)
+                val ambient = lightColor * ambientStrength
+
+                val norm = (sphere.center - pHit) norm
+                val lightDir = (light.center - pHit) norm
+                val diff = Math.max(lightDir dot norm, 0)
+                val diffuse = lightColor * diff
+
+                println(pHit)
+
+
+                val specularStrength = 0.5
+
+                val viewDir = (eye - pHit) norm
+                val reflectDir = norm * (2 * (lightDir dot norm)) - lightDir
+
+                val spec = Math.pow(Math.max(viewDir dot reflectDir, 0.0), 32)
+                val specular = lightColor * (specularStrength * spec)
+
+                val result = (ambient + diffuse + specular) * Vec3f(0, 0.5, 0)
+                val result1 = (result norm) * lightColor
+
+
+                println(s"res: $result ambient: $ambient diffuse: $diffuse specular: $specular")
+                //System.exit(1)
+                new Color(result.x.toInt % 256, result.y.toInt % 256, result.z.toInt % 256)
 
               }
             }
@@ -77,8 +101,8 @@ object App{
   private def computeRay(eye: Vec3f, yx: (Int, Int), s: Sphere, m: Int, k: Int) = {
     val c = Vec3f(yx._2, yx._1, 0)
 
-    val dir = (c - eye)
-    println(dir)
+    val dir = (eye - c)
+
 
     dir norm
 
@@ -126,7 +150,6 @@ object App{
       val ∇ = Math.pow((u dot t), 2) - (t.dot(t) - radius2)
 
       val d = -(u dot t)
-      println(s"∇: ${∇} d: $d")
 
 
       if (∇ > 0) {
