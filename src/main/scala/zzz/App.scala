@@ -6,7 +6,6 @@ import java.io.File
 object App{
 
   val INF: Double = 1000000000000f
-  val wVec = Vec3f(0, 1, 0)
 
   def main(args: Array[String]): Unit = {
 
@@ -34,10 +33,10 @@ object App{
     val ps = pixs.map {
       curPix =>
 
-        val rayDir = computeRay2(eye, curPix, sphere, height.size, width.size)
+        val rayDir = computeRay(eye, curPix, sphere, height.size, width.size)
         println(s"raydir: $rayDir")
 
-        val rs = sphere.intersect1(eye, rayDir)
+        val rs = sphere.intersect(eye, rayDir)
 
 
         (curPix._1, curPix._2, rs)
@@ -60,7 +59,7 @@ object App{
     ImageIO.write(newBufferedImage, "BMP", file)
   }
 
-  private def computeRay2(eye: Vec3f, yx: (Int, Int), s: Sphere, m: Int, k: Int) = {
+  private def computeRay(eye: Vec3f, yx: (Int, Int), s: Sphere, m: Int, k: Int) = {
     val c = Vec3f(yx._2, yx._1, 0)
 
     val dir = (c - eye)
@@ -70,70 +69,6 @@ object App{
 
   }
 
-  private def computeRay1(eye: Vec3f, hwJi: (Int, Int), s: Sphere, m: Int, k: Int) = {
-
-
-    val t = Vec3f(200, 200, 1000) - eye
-    val tn = t norm
-
-    val b = wVec * t
-    val bn = b norm
-
-
-    val vn = tn * bn
-
-
-    println(s"t: ${t} tn: ${tn} bn: ${bn}, vn: ${vn}")
-
-    println(s"tDotB: ${tn dot bn} bnDotVn: ${bn dot vn} z: ${tn dot vn}")
-
-    println(s"tDotB: ${t dot b}")
-
-
-    val gx = Math.tan(0.785398163)
-    val gy = gx * (m / k)
-
-    val qx = bn * ((2 * gx) / (k - 1))
-    val qy = vn * ((2 * gy) / (m - 1))
-    val p1m = tn - (bn * gx) - (vn * gy)
-
-    val pij = p1m + (qx * (hwJi._2 - 1)) + (qy * (hwJi._1 - 1))
-    println(s"pij: $pij")
-
-    val rayDir = pij norm
-
-    rayDir
-  }
-
-  private def computeRay(eye: Vec3f, pix: (Int, Int), s: Sphere, m: Int, k: Int) = {
-
-
-    val t = s.center - eye
-    val tn = t.norm()
-
-    val b = wVec * t
-    val bn = b.norm()
-
-    val vn = tn * bn
-
-    println(s"t: ${tn} b: ${bn}, v: ${vn}")
-
-    val gx = Math.tan(0.7854)
-
-
-    val gy = gx * (m / k)
-
-    val qx = bn * ((2 * gx) / (k - 1))
-    val qy = vn * (2 * gy / (m - 1))
-    val p1m = tn - vn * gx - vn * gy
-
-    val pij = p1m + qx * (pix._2) + qy * pix._1
-    println(s"pij: $pij")
-
-    val rayDir = pij.norm()
-
-    rayDir
-  }
 
   case class Vec3f(x: Double, y: Double, z: Double){
 
@@ -169,26 +104,7 @@ object App{
     val radius2: Double = radius * radius
     val falseR = IntersectResult(false, INF, INF)
 
-    def intersect(rayOrigin: Vec3f, rayDir: Vec3f): IntersectResult = {
-      val l = center - rayOrigin
-      val tca = l dot rayDir
-
-
-      if (tca < 0) {
-        return falseR
-      }
-      val d2 = (l dot l) - tca * tca
-      println(s"d2: $d2")
-      if (d2 > radius2) {
-        return falseR
-      }
-
-
-      val thc = Math.sqrt(radius2 - d2)
-      IntersectResult(true, tca - thc, tca + thc)
-    }
-
-    def intersect1(o: Vec3f, u: Vec3f): Boolean = {
+    def intersect(o: Vec3f, u: Vec3f): Boolean = {
       val t = o - center
       val ∇ = Math.pow((u dot (o - center)), 2) - (t.dot(t) - radius2)
 
