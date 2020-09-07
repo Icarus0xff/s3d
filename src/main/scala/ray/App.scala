@@ -1,7 +1,9 @@
-package zzz
+package ray
 
 import java.awt.Color
 import java.io.File
+
+import ray.App.Shadow.Shadow
 
 object App{
 
@@ -12,23 +14,18 @@ object App{
     val Shadow, BackColor, Color = Value
   }
 
-  val height = 1 to 400 toArray
-  val width = 1 to 400 toArray
+  val height = 1 to 700 toArray
+  val width = 1 to 700 toArray
 
-  val eye = Vec3f(width.size / 2, height.size / 2, -100f)
-  val sphere = Sphere(Vec3f(width.size / 2, height.size / 2, 100f), 64f)
-  val light = Sphere(Vec3f(width.size / 3, height.size / 3, 100f), 2f)
+  val eye = Vec3f(width.size / 2, height.size / 2, -10000f)
+  val sphere = Sphere(Vec3f(width.size / 2, height.size / 2, 100f), 80f)
+  val light = Sphere(Vec3f(width.size, height.size, 10f), 1f)
 
   def main(args: Array[String]): Unit = {
-
-
     rayTrace
-
   }
 
   private def rayTrace = {
-
-
     val pixs = for {
       h <- height
       w <- width
@@ -47,8 +44,9 @@ object App{
     ps.foreach {
       x =>
         x._3 match {
-          case (true, _) => newBufferedImage.setRGB(x._1, x._2, Color.GREEN.getRGB)
-          case (false, _) => newBufferedImage.setRGB(x._1, x._2, Color.WHITE.getRGB)
+          case Shadow.BackColor => newBufferedImage.setRGB(x._1, x._2, Color.WHITE.getRGB)
+          case Shadow.Color => newBufferedImage.setRGB(x._1, x._2, Color.GREEN.getRGB)
+          case Shadow.Shadow => newBufferedImage.setRGB(x._1, x._2, Color.BLACK.getRGB)
         }
     }
 
@@ -56,7 +54,7 @@ object App{
     ImageIO.write(newBufferedImage, "BMP", file)
   }
 
-  private def render(pixs: Array[(Int, Int)], eye: Vec3f, sphere: Sphere) = {
+  private def render(pixs: Array[(Int, Int)], eye: Vec3f, sphere: Sphere): Array[(Int, Int, Shadow)] = {
     pixs.map {
       curPix =>
 
@@ -65,22 +63,20 @@ object App{
 
         val intersectResult = sphere.intersect(eye, rayDir)
 
-        val z = intersectResult match {
-          case (true, d) =>
-            val pHit = rayDir + d
+        val shadow = intersectResult match {
+          case (true, near, far) =>
+            val pHit = rayDir + near
             val rd = light.center - pHit
 
             val ir = sphere.intersect(pHit, rd.norm())
-
-            if (ir._1) {
-              (false, 0)
-            } else {
-              (true, 0)
+            ir match {
+              case (true, _, _) => Shadow.Shadow
+              case (false, _, _) => Shadow.Color
             }
-          case _ => intersectResult
+          case _ => Shadow.BackColor
         }
 
-        (curPix._1, curPix._2, z)
+        (curPix._1, curPix._2, shadow)
     }
   }
 
@@ -131,18 +127,20 @@ object App{
     val radius2: Double = radius * radius
     val falseR = IntersectResult(false, INF, INF)
 
-    def intersect(o: Vec3f, u: Vec3f): (Boolean, Double) = {
+    def intersect(o: Vec3f, u: Vec3f): (Boolean, Double, Double) = {
       val t = o - center
       val ∇ = Math.pow((u dot t), 2) - (t.dot(t) - radius2)
 
-      val d = -(u dot t) + ∇
+      val d = -(u dot t)
       println(s"∇: ${∇} d: $d")
 
 
-      if (∇ >= 0) {
-        (true, d)
+      if (∇ > 0) {
+        (true, d - ∇, d + ∇)
+      } else if (∇ == 0) {
+        (true, d, d)
       } else {
-        (false, d)
+        (false, d, d)
       }
     }
 
