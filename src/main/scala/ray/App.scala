@@ -9,11 +9,11 @@ object App{
 
 
   val height = 1 to 700 toArray
-  val width = 1 to 700 toArray
+  val width = 1 to 799 toArray
 
-  val eye = Vec3f(width.size / 2, height.size / 2, -10000f)
-  val sphere = Sphere(Vec3f(width.size / 2, height.size / 3, 100f), 80f)
-  val light = Sphere(Vec3f(width.size, height.size, 0f), 1f)
+  val eye = Vec3f(width.size / 2, height.size / 2, -800f)
+  val sphere = Sphere(Vec3f(200, 200, 0f), 128f)
+  val light = Sphere(Vec3f(500, 200, 300f), 1f)
 
   def main(args: Array[String]): Unit = {
     rayTrace
@@ -24,7 +24,7 @@ object App{
       h <- height
       w <- width
     } yield {
-      (h, w)
+      (w, h)
     }
 
 
@@ -34,10 +34,9 @@ object App{
     import java.awt.image.BufferedImage
     val newBufferedImage = new BufferedImage(800, 800, BufferedImage.TYPE_INT_RGB)
 
-
     ps.foreach {
       x =>
-        newBufferedImage.setRGB(x._1, x._2, x._3.getRGB)
+        newBufferedImage.setRGB(x._2, x._1, x._3.getRGB)
     }
 
     import javax.imageio.ImageIO
@@ -81,7 +80,7 @@ object App{
                 val spec = Math.pow(Math.max(viewDir dot reflectDir, 0.0), 32)
                 val specular = lightColor * (specularStrength * spec)
 
-                val result = (ambient + diffuse + specular) * Vec3f(0, 0.5, 0)
+                val result = (ambient + diffuse + specular) * Vec3f(0, 0.5, 0.6)
                 val result1 = (result norm) * lightColor
 
 
