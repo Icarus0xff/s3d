@@ -6,6 +6,7 @@ import java.io.File
 
 import javax.imageio.ImageIO
 import ray.algo.Phong
+import ray.common.Object3D
 import ray.common.Utils.{Plane, Sphere, Vec3f}
 
 object App{
@@ -16,8 +17,7 @@ object App{
   val sphere = Sphere(Vec3f(1000, 900, 200f), 256f)
   val light = Sphere(Vec3f(400, 200, 1000f), 1)
 
-
-  val floor = Plane(Vec3f(0, -1, 0), 20)
+  val floor = Plane(Vec3f(0, -1, 0), 1)
 
   def main(args: Array[String]): Unit = {
     rayTrace
@@ -34,7 +34,7 @@ object App{
 
     val newBufferedImage = new BufferedImage(1600, 1600, BufferedImage.TYPE_INT_RGB)
 
-    render(pixs, eye, sphere).foreach {
+    render(pixs, eye, List(floor, sphere)).foreach {
       pix =>
         newBufferedImage.setRGB(pix._1, pix._2, pix._3.getRGB)
     }
@@ -44,27 +44,24 @@ object App{
     ImageIO.write(newBufferedImage, "BMP", file)
   }
 
-  private def render(pixs: Array[(Int, Int)], eye: Vec3f, sphere: Sphere): Array[(Int, Int, Color)] = {
-    pixs.map {
-      curPix =>
-        val eyeToPix = computeRay(eye, curPix)
-        println(eyeToPix)
+  private def render(pixs: Array[(Int, Int)], eye: Vec3f, objs: List[Object3D]): Array[(Int, Int, Color)] = {
+    for {
+      pix <- pixs
+      obj <- objs
+      eyeToPix = computeRay(eye, pix)
+      color = obj.intersect(eye, eyeToPix) match {
+        case (true, d) =>
+          Phong.renderPix(eye, eyeToPix, d, light, obj)
+        case _ => Color.BLACK
+      }
 
-        val color = sphere.intersect(eye, eyeToPix) match {
-          case (true, d) =>
-            Phong.renderPix(eye, eyeToPix, d, light, sphere)
-          case _ => Color.BLACK
-        }
-
-        (curPix._1, curPix._2, color)
-    }
+    } yield (pix._1, pix._2, color)
   }
 
   private def computeRay(eye: Vec3f, xy: (Int, Int)) = {
     val pix = Vec3f(xy._1, xy._2, 0)
     val dir = (pix - eye)
 
-    println(s"pix: $pix dir: $dir eye: $eye")
 
     dir norm
 

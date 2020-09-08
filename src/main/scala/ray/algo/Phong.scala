@@ -2,17 +2,18 @@ package ray.algo
 
 import java.awt.Color
 
+import ray.common.Object3D
 import ray.common.Utils.{Sphere, Vec3f}
 
 object Phong{
-  def renderPix(eye: Vec3f, eyeToPix: Vec3f, d: Double, light: Sphere, sphere: Sphere): Color = {
-    val pHit = eye + (eyeToPix * d)
+  def renderPix(eye: Vec3f, eyeToPix: Vec3f, eyeToPDistance: Double, light: Sphere, obj: Object3D): Color = {
+    val pHit = eye + (eyeToPix * eyeToPDistance)
 
     val ambientStrength = .2
     val lightColor = Vec3f(255, 255, 255)
     val ambient = lightColor * ambientStrength
 
-    val norm = (pHit - sphere.center).norm
+    val norm = obj.normal(pHit)
     val lightDir = (light.center - pHit) norm
     val diff = Math.max(lightDir dot norm, 0)
     val diffuse = lightColor * diff

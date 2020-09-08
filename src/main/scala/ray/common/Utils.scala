@@ -31,8 +31,8 @@ object Utils{
     }
   }
 
-  case class Plane(n: Vec3f, d: Double){
-    def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
+  case class Plane(n: Vec3f, d: Double) extends Object3D{
+    override def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
       val a = d - (n dot o)
       val b = n dot dir
 
@@ -42,14 +42,18 @@ object Utils{
       }
 
     }
+
+    override def normal(p: Vec3f): Vec3f = {
+      n
+    }
   }
 
-  case class Sphere(center: Vec3f, radius: Double){
+  case class Sphere(center: Vec3f, radius: Double) extends Object3D{
 
     val radius2: Double = radius * radius
 
 
-    def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
+    override def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
       val L = center - o
 
       val tca = L dot dir
@@ -74,6 +78,10 @@ object Utils{
         case (a, b) if a < b =>
           (true, b)
       }
+    }
+
+    override def normal(p: Vec3f): Vec3f = {
+      (p - center).norm
     }
 
   }
