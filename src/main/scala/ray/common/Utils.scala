@@ -31,6 +31,8 @@ object Utils{
     }
   }
 
+  case class Plane(vertices: Array[Vec3f])
+
   case class Sphere(center: Vec3f, radius: Double){
 
     val radius2: Double = radius * radius

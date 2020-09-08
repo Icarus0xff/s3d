@@ -6,7 +6,7 @@ import java.io.File
 
 import javax.imageio.ImageIO
 import ray.algo.Phong
-import ray.common.Utils.{Sphere, Vec3f}
+import ray.common.Utils.{Plane, Sphere, Vec3f}
 
 object App{
   val height = 1 to 1400 toArray
@@ -15,6 +15,13 @@ object App{
   val eye = Vec3f(width.size / 2, height.size / 2, -800f)
   val sphere = Sphere(Vec3f(1000, 900, 200f), 256f)
   val light = Sphere(Vec3f(400, 200, 1000f), 1)
+
+  private val large = 100000
+
+  val floor = Plane(Array(
+    Vec3f(0, large, large), Vec3f(large, large, large),
+    Vec3f(large, large, -large), Vec3f(0, large, -large)
+  ))
 
   def main(args: Array[String]): Unit = {
     rayTrace
@@ -44,7 +51,7 @@ object App{
   private def render(pixs: Array[(Int, Int)], eye: Vec3f, sphere: Sphere): Array[(Int, Int, Color)] = {
     pixs.map {
       curPix =>
-        val eyeToPix = computeRay(eye, curPix, sphere)
+        val eyeToPix = computeRay(eye, curPix)
         println(eyeToPix)
 
         val color = sphere.intersect(eye, eyeToPix) match {
@@ -57,7 +64,7 @@ object App{
     }
   }
 
-  private def computeRay(eye: Vec3f, xy: (Int, Int), s: Sphere) = {
+  private def computeRay(eye: Vec3f, xy: (Int, Int)) = {
     val pix = Vec3f(xy._1, xy._2, 0)
     val dir = (pix - eye)
 
