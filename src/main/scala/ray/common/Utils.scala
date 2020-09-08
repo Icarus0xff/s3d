@@ -31,7 +31,18 @@ object Utils{
     }
   }
 
-  case class Plane(vertices: Array[Vec3f])
+  case class Plane(n: Vec3f, d: Double){
+    def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
+      val a = d - (n dot o)
+      val b = n dot dir
+
+      b match {
+        case 0 => (false, 0)
+        case _ => (true, a / b)
+      }
+
+    }
+  }
 
   case class Sphere(center: Vec3f, radius: Double){
 

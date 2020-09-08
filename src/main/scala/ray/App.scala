@@ -16,12 +16,8 @@ object App{
   val sphere = Sphere(Vec3f(1000, 900, 200f), 256f)
   val light = Sphere(Vec3f(400, 200, 1000f), 1)
 
-  private val large = 100000
 
-  val floor = Plane(Array(
-    Vec3f(0, large, large), Vec3f(large, large, large),
-    Vec3f(large, large, -large), Vec3f(0, large, -large)
-  ))
+  val floor = Plane(Vec3f(0, -1, 0), 20)
 
   def main(args: Array[String]): Unit = {
     rayTrace
