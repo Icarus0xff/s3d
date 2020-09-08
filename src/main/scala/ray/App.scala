@@ -17,16 +17,16 @@ object App{
 
   private def rayTrace = {
     val pixs = for {
-      w <- width
-      h <- height
+      x <- width
+      y <- height
     } yield {
-      (w, h)
+      (x, y)
     }
 
 
     val ps = render(pixs, eye, sphere)
 
-    val file = new File("pic2.bmp")
+    val file = new File("pic.bmp")
     import java.awt.image.BufferedImage
     val newBufferedImage = new BufferedImage(1600, 1600, BufferedImage.TYPE_INT_RGB)
 
@@ -50,31 +50,28 @@ object App{
         val color = firstIntersect match {
           case (true, near) =>
             val pHit = eye + (eyeToPix * near)
-            val pToLightDir = (light.center - pHit).norm
 
-            sphere.intersect(pHit, pToLightDir) match {
-              case _ =>
-                val ambientStrength = .1
-                val lightColor = Vec3f(255, 255, 255)
-                val ambient = lightColor * ambientStrength
+            val ambientStrength = .1
+            val lightColor = Vec3f(255, 255, 255)
+            val ambient = lightColor * ambientStrength
 
-                val norm = (pHit - sphere.center).norm
-                val lightDir = (light.center - pHit) norm
-                val diff = Math.max(lightDir dot norm, 0)
-                val diffuse = lightColor * diff
+            val norm = (pHit - sphere.center).norm
+            val lightDir = (light.center - pHit) norm
+            val diff = Math.max(lightDir dot norm, 0)
+            val diffuse = lightColor * diff
 
-                val specularStrength = 0.7
+            val specularStrength = 0.7
 
-                val viewDir = (pHit - eye) norm
-                val reflectDir = norm * (2 * (lightDir dot norm)) - lightDir
+            val viewDir = (pHit - eye) norm
+            val reflectDir = norm * (2 * (lightDir dot norm)) - lightDir
 
-                val spec = Math.pow(Math.max(viewDir dot reflectDir, 0.0), 32)
-                val specular = lightColor * (specularStrength * spec)
+            val spec = Math.pow(Math.max(viewDir dot reflectDir, 0.0), 32)
+            val specular = lightColor * (specularStrength * spec)
 
-                val result = (ambient + diffuse + specular) * Vec3f(.6, .5, .6)
+            val result = (ambient + diffuse + specular) * Vec3f(.6, .5, .6)
 
-                new Color(result.x.toInt, result.y.toInt, result.z.toInt)
-            }
+            new Color(result.x.toInt, result.y.toInt, result.z.toInt)
+
 
           case _ => Color.BLACK
         }
