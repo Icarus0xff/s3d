@@ -12,8 +12,8 @@ object App{
   val width = 1 to 799 toArray
 
   val eye = Vec3f(width.size / 2, height.size / 2, -800f)
-  val sphere = Sphere(Vec3f(200, 200, 0f), 64f)
-  val light = Sphere(Vec3f(700, 200, 200f), 10)
+  val sphere = Sphere(Vec3f(700, 400, 200f), 128f)
+  val light = Sphere(Vec3f(400, 200, 100f), 1)
 
   def main(args: Array[String]): Unit = {
     rayTrace
@@ -36,7 +36,7 @@ object App{
 
     ps.foreach {
       x =>
-        newBufferedImage.setRGB(x._2, x._1, x._3.getRGB)
+        newBufferedImage.setRGB(x._1, x._2, x._3.getRGB)
     }
 
 
@@ -50,7 +50,7 @@ object App{
 
     ps.filter(x => x._3 == Color.BLUE).foreach {
       x =>
-        newBufferedImage1.setRGB(x._2, x._1, x._3.getRGB)
+        newBufferedImage1.setRGB(x._1, x._2, x._3.getRGB)
     }
 
     import javax.imageio.ImageIO
@@ -64,47 +64,46 @@ object App{
         val firstIntersect = sphere.intersect(eye, eyeToPix)
 
         val color = firstIntersect match {
-          case (true, _, _) => Color.WHITE
+          case (true, near) =>
+            val pHit = eye + (eyeToPix * near)
+            val pToLightDir = (light.center - pHit).norm
+            val secondIntersect = sphere.intersect(pHit, pToLightDir)
 
-          //            val pHit = eye + (eyeToPix * near)
-          //            val pToLightDir = (light.center - pHit) norm
-          //
-          //            val secondIntersect = sphere.intersect(pHit, pToLightDir)
-          //            secondIntersect match {
-          //              case (true, d1, d2) =>
-          //                Color.BLUE
-          //              //println(s"pToLightDir: $pToLightDir pHit:$pHit, near: $near, rayDirNear: ${eyeToPix * near},rayDirFar: ${eyeToPix * far},eyeToPix: $eyeToPix, eye: $eye, far: $far")
-          //              case (false, _, _) => {
-          //                Color.WHITE
-          //                //                val ambientStrength = .01
-          //                //                val lightColor = Vec3f(255, 255, 255)
-          //                //                val ambient = lightColor * ambientStrength
-          //                //
-          //                //                val norm = (pHit - sphere.center) norm
-          //                //                val lightDir = (light.center - pHit) norm
-          //                //                val diff = Math.max(lightDir dot norm, 0)
-          //                //                val diffuse = lightColor * diff
-          //                //
-          //                //
-          //                //                val specularStrength = 0.7
-          //                //
-          //                //                val viewDir = (pHit - eye) norm
-          //                //                val reflectDir = norm * (2 * (lightDir dot norm)) - lightDir
-          //                //
-          //                //                val spec = Math.pow(Math.max(viewDir dot reflectDir, 0.0), 32)
-          //                //                val specular = lightColor * (specularStrength * spec)
-          //                //
-          //                //                val result = (ambient) * Vec3f(.7, .7, .7)
-          //                //
-          //                //                println(s"res: $result ambient: $ambient diffuse: $diffuse specular: $specular")
-          //                //
-          //                //                //val c = new Color(result.x.toInt % 256, result.y.toInt % 256, result.z.toInt % 256)
-          //                //                val c = new Color(result.x.toInt, result.y.toInt, result.z.toInt)
-          //                //
-          //                //
-          //                //                c
-          //              }
-          //            }
+
+            println(pHit)
+
+            val c = secondIntersect match {
+              case (true, _) =>
+                Color.BLUE
+              case _ =>
+
+                val ambientStrength = .1
+                val lightColor = Vec3f(255, 255, 255)
+                val ambient = lightColor * ambientStrength
+
+                val norm = (pHit - sphere.center).norm
+                val lightDir = (pHit - light.center) norm
+                val diff = Math.max(lightDir dot norm, 0)
+                val diffuse = lightColor * diff
+
+                val specularStrength = 0.7
+
+                val viewDir = (pHit - eye) norm
+                val reflectDir = norm * (2 * (lightDir dot norm)) - lightDir
+
+                val spec = Math.pow(Math.max(viewDir dot reflectDir, 0.0), 32)
+                val specular = lightColor * (specularStrength * spec)
+
+                val result = (ambient + diffuse + specular) * Vec3f(.7, 1, .7)
+
+                //                println(s"res: $result ambient: $ambient diffuse: $diffuse specular: $specular")
+
+                //val c = new Color(result.x.toInt % 256, result.y.toInt % 256, result.z.toInt % 256)
+                new Color(result.x.toInt, result.y.toInt, result.z.toInt)
+              //c
+
+            }
+            c
           case _ => Color.BLACK
         }
 
@@ -113,7 +112,7 @@ object App{
   }
 
   private def computeRay(eye: Vec3f, xy: (Int, Int), s: Sphere) = {
-    val p = Vec3f(xy._1, xy._2, -400)
+    val p = Vec3f(xy._1, xy._2, 0)
     val dir = (p - eye)
 
 
@@ -132,7 +131,7 @@ object App{
 
     def *(that: Vec3f) = Vec3f(this.x * that.x, this.y * that.y, this.z * that.z)
 
-    def *(that: Double) = Vec3f(this.x * that, this.y * that, this.z * that)
+    def *(that: Double) = Vec3f(x * that, y * that, z * that)
 
     def dot(that: Vec3f) = this.x * that.x + this.y * that.y + this.z * that.z
 
@@ -158,18 +157,30 @@ object App{
     val radius2: Double = radius * radius
 
 
-    def intersect(o: Vec3f, u: Vec3f): (Boolean, Double, Double) = {
-      val t = o - center
-      val ∇ = Math.pow((u dot t), 2) - (t.dot(t) - radius2)
+    def intersect(o: Vec3f, u: Vec3f): (Boolean, Double) = {
+      val L = center - o
 
-      val d = -(u dot t)
+      val tca = L dot u
+      if (tca < 0) {
+        return (false, 0)
+      }
 
-      if (∇ > 0) {
-        (true, d + ∇, d - ∇)
-      } else if (∇ == 0) {
-        (true, d, d)
-      } else {
-        (false, d, d)
+      val d2 = (L dot L) - tca * tca
+      if (d2 > radius2) {
+        return (false, 0)
+      }
+
+      val thc = Math.sqrt(radius2 - d2);
+      val t0 = tca - thc
+      val t1 = tca + thc
+
+      (t0, t1) match {
+        case (a, b) if a < 0 && b < 0 =>
+          (false, 0)
+        case (a, b) if a > b =>
+          (true, a)
+        case (a, b) if a < b =>
+          (true, b)
       }
     }
 
