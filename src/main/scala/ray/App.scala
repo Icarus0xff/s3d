@@ -4,16 +4,12 @@ import java.awt.Color
 import java.io.File
 
 object App{
-
-  val INF: Double = 1000000000000f
-
-
-  val height = 1 to 700 toArray
-  val width = 1 to 799 toArray
+  val height = 1 to 1400 toArray
+  val width = 1 to 1500 toArray
 
   val eye = Vec3f(width.size / 2, height.size / 2, -800f)
-  val sphere = Sphere(Vec3f(700, 400, 200f), 128f)
-  val light = Sphere(Vec3f(400, 200, 100f), 1)
+  val sphere = Sphere(Vec3f(1000, 900, 200f), 256f)
+  val light = Sphere(Vec3f(400, 200, 1000f), 1)
 
   def main(args: Array[String]): Unit = {
     rayTrace
@@ -32,7 +28,7 @@ object App{
 
     val file = new File("pic2.bmp")
     import java.awt.image.BufferedImage
-    val newBufferedImage = new BufferedImage(800, 800, BufferedImage.TYPE_INT_RGB)
+    val newBufferedImage = new BufferedImage(1600, 1600, BufferedImage.TYPE_INT_RGB)
 
     ps.foreach {
       x =>
@@ -42,47 +38,28 @@ object App{
 
     import javax.imageio.ImageIO
     ImageIO.write(newBufferedImage, "BMP", file)
-
-
-    val file1 = new File("pic3.bmp")
-    import java.awt.image.BufferedImage
-    val newBufferedImage1 = new BufferedImage(800, 800, BufferedImage.TYPE_INT_RGB)
-
-    ps.filter(x => x._3 == Color.BLUE).foreach {
-      x =>
-        newBufferedImage1.setRGB(x._1, x._2, x._3.getRGB)
-    }
-
-    import javax.imageio.ImageIO
-    ImageIO.write(newBufferedImage1, "BMP", file1)
   }
 
   private def render(pixs: Array[(Int, Int)], eye: Vec3f, sphere: Sphere): Array[(Int, Int, Color)] = {
     pixs.map {
       curPix =>
         val eyeToPix = computeRay(eye, curPix, sphere)
-        val firstIntersect = sphere.intersect(eye, eyeToPix)
+        println(eyeToPix)
 
+        val firstIntersect = sphere.intersect(eye, eyeToPix)
         val color = firstIntersect match {
           case (true, near) =>
             val pHit = eye + (eyeToPix * near)
             val pToLightDir = (light.center - pHit).norm
-            val secondIntersect = sphere.intersect(pHit, pToLightDir)
 
-
-            println(pHit)
-
-            val c = secondIntersect match {
-              case (true, _) =>
-                Color.BLUE
+            sphere.intersect(pHit, pToLightDir) match {
               case _ =>
-
                 val ambientStrength = .1
                 val lightColor = Vec3f(255, 255, 255)
                 val ambient = lightColor * ambientStrength
 
                 val norm = (pHit - sphere.center).norm
-                val lightDir = (pHit - light.center) norm
+                val lightDir = (light.center - pHit) norm
                 val diff = Math.max(lightDir dot norm, 0)
                 val diffuse = lightColor * diff
 
@@ -94,16 +71,11 @@ object App{
                 val spec = Math.pow(Math.max(viewDir dot reflectDir, 0.0), 32)
                 val specular = lightColor * (specularStrength * spec)
 
-                val result = (ambient + diffuse + specular) * Vec3f(.7, 1, .7)
+                val result = (ambient + diffuse + specular) * Vec3f(.6, .5, .6)
 
-                //                println(s"res: $result ambient: $ambient diffuse: $diffuse specular: $specular")
-
-                //val c = new Color(result.x.toInt % 256, result.y.toInt % 256, result.z.toInt % 256)
                 new Color(result.x.toInt, result.y.toInt, result.z.toInt)
-              //c
-
             }
-            c
+
           case _ => Color.BLACK
         }
 
@@ -112,9 +84,10 @@ object App{
   }
 
   private def computeRay(eye: Vec3f, xy: (Int, Int), s: Sphere) = {
-    val p = Vec3f(xy._1, xy._2, 0)
-    val dir = (p - eye)
+    val pix = Vec3f(xy._1, xy._2, 0)
+    val dir = (pix - eye)
 
+    println(s"pix: $pix dir: $dir eye: $eye")
 
     dir norm
 
@@ -157,10 +130,10 @@ object App{
     val radius2: Double = radius * radius
 
 
-    def intersect(o: Vec3f, u: Vec3f): (Boolean, Double) = {
+    def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
       val L = center - o
 
-      val tca = L dot u
+      val tca = L dot dir
       if (tca < 0) {
         return (false, 0)
       }
