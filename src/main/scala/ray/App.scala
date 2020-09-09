@@ -15,9 +15,10 @@ object App{
 
   val eye = Vec3f(width.size / 2, height.size / 2, -800f)
   val sphere = Sphere(Vec3f(1000, 900, 200f), 256f)
+  val sphere1 = Sphere(Vec3f(200, 700, 200f), 256f)
   val light = Sphere(Vec3f(400, 200, 1000f), 1)
 
-  val floor = Plane(Vec3f(0, -1, 0), 1)
+  val floor = Plane(Vec3f(0, 0, -1), 1)
 
   def main(args: Array[String]): Unit = {
     rayTrace
@@ -34,7 +35,7 @@ object App{
 
     val newBufferedImage = new BufferedImage(1600, 1600, BufferedImage.TYPE_INT_RGB)
 
-    render(pixs, eye, List(floor, sphere)).foreach {
+    render(pixs, eye, List(sphere, sphere1)).foreach {
       pix =>
         newBufferedImage.setRGB(pix._1, pix._2, pix._3.getRGB)
     }
@@ -45,17 +46,37 @@ object App{
   }
 
   private def render(pixs: Array[(Int, Int)], eye: Vec3f, objs: List[Object3D]): Array[(Int, Int, Color)] = {
-    for {
+    val pixIntersections = (for {
       pix <- pixs
       obj <- objs
+
       eyeToPix = computeRay(eye, pix)
-      color = obj.intersect(eye, eyeToPix) match {
-        case (true, d) =>
-          Phong.renderPix(eye, eyeToPix, d, light, obj)
-        case _ => Color.BLACK
+      intersection = obj.intersect(eye, eyeToPix)
+      if intersection._1
+
+    } yield (pix, intersection._1, intersection._2, obj, eyeToPix)).groupBy(x => x._1)
+
+    val pixNearestObj = for {
+      is <- pixIntersections
+      body = is._2
+
+
+      nearestObj = body.reduce {
+        (a, b) =>
+          if (a._3 < b._3) {
+            a
+          } else {
+            b
+          }
       }
 
-    } yield (pix._1, pix._2, color)
+      c = Phong.renderPix(eye, nearestObj._5, nearestObj._3, light, nearestObj._4)
+
+
+    } yield (is._1._1, is._1._2, c)
+
+    pixNearestObj toArray
+
   }
 
   private def computeRay(eye: Vec3f, xy: (Int, Int)) = {
