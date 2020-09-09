@@ -7,7 +7,7 @@ import java.io.File
 import javax.imageio.ImageIO
 import ray.algo.Phong
 import ray.common.Object3D
-import ray.common.Utils.{Plane, Sphere, Vec3f}
+import ray.common.Utils.{Plane, Sphere, Triangle, Vec3f}
 
 object App{
   val height = 1 to 1400 toArray
@@ -17,6 +17,13 @@ object App{
   val sphere = Sphere(Vec3f(1000, 900, 200f), 256f)
   val sphere1 = Sphere(Vec3f(200, 700, 200f), 256f)
   val light = Sphere(Vec3f(400, 200, 1000f), 1)
+
+  private val large = 1005
+  val triangle = Triangle(
+    Vec3f(500, 100, 1000), //a
+    Vec3f(100, 500, 1000), //b
+    Vec3f(309, 400, 1000), //c
+  )
 
   val floor = Plane(Vec3f(0, 0, -1), 1)
 
@@ -35,7 +42,7 @@ object App{
 
     val newBufferedImage = new BufferedImage(1600, 1600, BufferedImage.TYPE_INT_RGB)
 
-    render(pixs, eye, List(sphere, sphere1)).foreach {
+    render(pixs, eye, List(triangle, sphere1, sphere)).foreach {
       pix =>
         newBufferedImage.setRGB(pix._1, pix._2, pix._3.getRGB)
     }
@@ -48,6 +55,7 @@ object App{
   private def render(pixs: Array[(Int, Int)], eye: Vec3f, objs: List[Object3D]): Array[(Int, Int, Color)] = {
     val pixIntersections = (for {
       pix <- pixs
+
       obj <- objs
 
       eyeToPix = computeRay(eye, pix)
@@ -71,6 +79,7 @@ object App{
       }
 
       c = Phong.renderPix(eye, nearestObj._5, nearestObj._3, light, nearestObj._4)
+      //c = Color.BLUE
 
 
     } yield (is._1._1, is._1._2, c)

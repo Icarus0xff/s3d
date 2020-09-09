@@ -14,7 +14,11 @@ object Utils{
 
     def *(that: Double) = Vec3f(x * that, y * that, z * that)
 
+    def /(that: Double) = Vec3f(x / that, y / that, z / that)
+
     def dot(that: Vec3f) = this.x * that.x + this.y * that.y + this.z * that.z
+
+    def length() = Math.sqrt(x * x + y * y + z * z)
 
 
     def norm() = {
@@ -29,6 +33,50 @@ object Utils{
 
       normed
     }
+  }
+
+  case class Triangle(A: Vec3f, B: Vec3f, C: Vec3f) extends Object3D{
+    private val nt = ((A - B) * (C - B))
+    val n = nt / nt.length
+
+
+    override def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
+
+      val d = n dot A
+
+      val a = d - (n dot o)
+      val b = n dot dir
+
+
+      b match {
+        case m if Math.abs(m - 0) < 0.00001 =>
+          (false, 0)
+        case _ => {
+          val Q = o + (dir * (a / b))
+
+
+          println(s"n: $n nt: $nt ntl:${nt.length} Q: $Q d: ${a / b}, o: $o dir: $dir")
+
+          def test(b1: Vec3f, a1: Vec3f) = {
+            ((b1 - a1) * (Q - a1)) dot n match {
+              case m if Math.abs(m - 0) < 0.0001 || m > 0 =>
+                println(s"mmm: $m")
+                true
+              case m =>
+                println(s"fuck: ${m}")
+                false
+            }
+          }
+
+          test(B, A) && test(C, B) && test(A, C) match {
+            case true => (true, a / b)
+            case _ => (false, 0)
+          }
+        }
+      }
+    }
+
+    override def normal(p: Vec3f): Vec3f = n
   }
 
   case class Plane(n: Vec3f, d: Double) extends Object3D{
