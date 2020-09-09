@@ -52,7 +52,7 @@ object Utils{
         case m if Math.abs(m - 0) < 0.00001 =>
           (false, 0)
         case _ => {
-          val Q = o + (dir * (a / b))
+          val Q = o + (dir * ((n dot o) + d))
 
 
           println(s"n: $n nt: $nt ntl:${nt.length} Q: $Q d: ${a / b}, o: $o dir: $dir")
