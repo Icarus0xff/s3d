@@ -4,7 +4,10 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 
 object Utils{
 
+  implicit def aTob(s: Vector3D): Vec3f = Vec3f(s.getX, s.getY, s.getZ)
+
   case class Vec3f(x: Double, y: Double, z: Double) extends Vector3D(x, y, z){
+
 
     def -(that: Vec3f) = Vec3f(this.x - that.x, this.y - that.y, this.z - that.z)
 
@@ -12,7 +15,7 @@ object Utils{
 
     def +(that: Double) = Vec3f(this.x + that, this.y + that, this.z + that)
 
-    def colorMultiply(that: Vec3f) = Vec3f(this.x * that.x, this.y * that.y, this.z * that.z)
+    def vecMultiply(that: Vec3f) = Vec3f(this.x * that.x, this.y * that.y, this.z * that.z)
 
     def *(that: Double) = Vec3f(x * that, y * that, z * that)
 
@@ -69,7 +72,7 @@ object Utils{
             }
           }
 
-          test(B, A) && test(C, B) && test(A, C) match {
+          test(B, A) && test(C, B) && test(A, C) && t > 0 match {
             case true => (true, t)
             case _ => (false, 0)
           }
