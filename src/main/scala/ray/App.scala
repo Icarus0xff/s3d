@@ -7,7 +7,7 @@ import java.io.File
 import javax.imageio.ImageIO
 import ray.algo.Phong
 import ray.common.Object3D
-import ray.common.Utils.{Plane, Sphere, Triangle, Vec3f}
+import ray.common.Utils.{Sphere, Triangle, Vec3f}
 
 object App{
   val height = 1 to 1400 toArray
@@ -18,14 +18,13 @@ object App{
   val sphere1 = Sphere(Vec3f(200, 700, 200f), 256f)
   val light = Sphere(Vec3f(400, 200, 1000f), 1)
 
-  private val large = 1005
+  private val large = 1000000000
   val triangle = Triangle(
-    Vec3f(600, 100, 1000), //a
-    Vec3f(0, 800, 1000), //b
-    Vec3f(1200, 800, 1000), //c
+    Vec3f(-1000, -1000, 1200), //a
+    Vec3f(0, large, 1200), //b
+    Vec3f(large, large, 1200), //c
   )
 
-  val floor = Plane(Vec3f(0, 0, -1), 1)
 
   def main(args: Array[String]): Unit = {
     rayTrace
@@ -79,8 +78,6 @@ object App{
       }
 
       c = Phong.renderPix(eye, nearestObj._5, nearestObj._3, light, nearestObj._4)
-      //c = Color.BLUE
-
 
     } yield (is._1._1, is._1._2, c)
 

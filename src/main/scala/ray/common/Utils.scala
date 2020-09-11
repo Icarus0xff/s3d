@@ -81,20 +81,26 @@ object Utils{
     override def normal(p: Vec3f): Vec3f = Vec3f(n.getX, n.getY, n.getZ)
   }
 
-  case class Plane(n: Vec3f, d: Double) extends Object3D{
+  case class Plane(n: Vector3D, p: Vector3D) extends Object3D{
     override def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
-      val a = d - (n dot o)
-      val b = n dot dir
+      val d = n dotProduct p
 
-      b match {
-        case 0 => (false, 0)
-        case _ => (true, a / b)
+      val ta = d - (n dotProduct o)
+      val tb = n dotProduct dir
+      val t = ta / tb
+
+      tb match {
+        case m if Math.abs(m - 0) < 0.000001 =>
+          (false, 0)
+        case _ => {
+          (true, t)
+        }
       }
 
     }
 
     override def normal(p: Vec3f): Vec3f = {
-      n
+      Vec3f(n.getX, n.getY, n.getZ)
     }
   }
 
