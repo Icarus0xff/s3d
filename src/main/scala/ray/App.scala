@@ -20,9 +20,9 @@ object App{
 
   private val large = 1005
   val triangle = Triangle(
-    Vec3f(500, 100, 1000), //a
-    Vec3f(100, 500, 1000), //b
-    Vec3f(309, 400, 1000), //c
+    Vec3f(600, 100, 1000), //a
+    Vec3f(0, 800, 1000), //b
+    Vec3f(1200, 800, 1000), //c
   )
 
   val floor = Plane(Vec3f(0, 0, -1), 1)

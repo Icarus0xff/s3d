@@ -38,47 +38,47 @@ object Utils{
   }
 
   case class Triangle(A: Vec3f, B: Vec3f, C: Vec3f) extends Object3D{
-    private val nt = ((A - B) * (C - B))
-    val n = nt / nt.length
+    private val AB = B subtract A
+    private val AC = C subtract A
+    private val na = AB crossProduct AC
+    private val nb = 1 / (na getNorm)
+
+    val n = na scalarMultiply (nb)
 
 
     override def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
+      val d = n dotProduct A
 
-      val d = n dot A
+      val ta = d - (n dotProduct o)
+      val tb = n dotProduct dir
+      val t = ta / tb
 
-      val a = d - (n dot o)
-      val b = n dot dir
 
-
-      b match {
-        case m if Math.abs(m - 0) < 0.00001 =>
+      tb match {
+        case m if Math.abs(m - 0) < 0.000001 =>
           (false, 0)
         case _ => {
-          val Q = o + (dir * ((n dot o) + d))
-
-
-          println(s"n: $n nt: $nt ntl:${nt.length} Q: $Q d: ${a / b}, o: $o dir: $dir")
+          val Q = o add (dir scalarMultiply t)
 
           def test(b1: Vec3f, a1: Vec3f) = {
-            ((b1 - a1) * (Q - a1)) dot n match {
+            ((b1 subtract a1) crossProduct (Q subtract a1)) dotProduct n match {
               case m if Math.abs(m - 0) < 0.0001 || m > 0 =>
-                println(s"mmm: $m")
                 true
-              case m =>
-                println(s"fuck: ${m}")
+              case _ =>
                 false
             }
           }
 
           test(B, A) && test(C, B) && test(A, C) match {
-            case true => (true, a / b)
+            case true => (true, t)
             case _ => (false, 0)
           }
         }
       }
+
     }
 
-    override def normal(p: Vec3f): Vec3f = n
+    override def normal(p: Vec3f): Vec3f = Vec3f(n.getX, n.getY, n.getZ)
   }
 
   case class Plane(n: Vec3f, d: Double) extends Object3D{
