@@ -5,16 +5,29 @@ import java.awt.image.BufferedImage
 import java.io.File
 
 import javax.imageio.ImageIO
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.algo.Phong
-import ray.common.Utils.{Sphere, Vec3f}
+import ray.common.Object3D
+import ray.common.Utils.{Sphere, Triangle, Vec3f}
 
 object App{
   val height = 1 to 1400 toArray
   val width = 1 to 1500 toArray
 
   val eye = Vec3f(width.size / 2, height.size / 2, -800f)
-  val sphere = Sphere(Vec3f(1000, 900, 200f), 256f)
-  val light = Sphere(Vec3f(400, 200, 1000f), 1)
+  val sphere = Sphere(Vec3f(1000, 900, 200f), 256f, new Vector3D(.25, .45, .07))
+  val sphere1 = Sphere(Vec3f(200, 700, 200f), 256f, new Vector3D(.5, .5, .5))
+
+  val light = Sphere(Vec3f(400, 200, 1000f), 1, new Vector3D(.25, .45, .07))
+
+  private val large = 1000000000
+  val triangle = Triangle(
+    Vec3f(-1000, -1000, 1200), //a
+    Vec3f(0, large, 1200), //b
+    Vec3f(large, large, 1200), //c
+    color = new Vector3D(.6, 0, .6)
+  )
+
 
   def main(args: Array[String]): Unit = {
     rayTrace
@@ -31,7 +44,7 @@ object App{
 
     val newBufferedImage = new BufferedImage(1600, 1600, BufferedImage.TYPE_INT_RGB)
 
-    render(pixs, eye, sphere).foreach {
+    render(pixs, eye, List(triangle, sphere1, sphere)).foreach {
       pix =>
         newBufferedImage.setRGB(pix._1, pix._2, pix._3.getRGB)
     }
@@ -41,27 +54,44 @@ object App{
     ImageIO.write(newBufferedImage, "BMP", file)
   }
 
-  private def render(pixs: Array[(Int, Int)], eye: Vec3f, sphere: Sphere): Array[(Int, Int, Color)] = {
-    pixs.map {
-      curPix =>
-        val eyeToPix = computeRay(eye, curPix, sphere)
-        println(eyeToPix)
+  private def render(pixs: Array[(Int, Int)], eye: Vec3f, objs: List[Object3D]): Array[(Int, Int, Color)] = {
+    val pixIntersections = (for {
+      pix <- pixs
 
-        val color = sphere.intersect(eye, eyeToPix) match {
-          case (true, d) =>
-            Phong.renderPix(eye, eyeToPix, d, light, sphere)
-          case _ => Color.BLACK
-        }
+      obj <- objs
 
-        (curPix._1, curPix._2, color)
-    }
+      eyeToPix = computeRay(eye, pix)
+      intersection = obj.intersect(eye, eyeToPix)
+      if intersection._1
+
+    } yield (pix, intersection._1, intersection._2, obj, eyeToPix)).groupBy(x => x._1)
+
+    val pixNearestObj = for {
+      is <- pixIntersections
+      body = is._2
+
+
+      nearestObj = body.reduce {
+        (a, b) =>
+          if (a._3 < b._3) {
+            a
+          } else {
+            b
+          }
+      }
+
+      c = Phong.renderPix(eye, nearestObj._5, nearestObj._3, light, nearestObj._4)
+
+    } yield (is._1._1, is._1._2, c)
+
+    pixNearestObj toArray
+
   }
 
-  private def computeRay(eye: Vec3f, xy: (Int, Int), s: Sphere) = {
+  private def computeRay(eye: Vec3f, xy: (Int, Int)) = {
     val pix = Vec3f(xy._1, xy._2, 0)
     val dir = (pix - eye)
 
-    println(s"pix: $pix dir: $dir eye: $eye")
 
     dir norm
 
