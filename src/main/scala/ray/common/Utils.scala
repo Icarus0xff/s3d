@@ -1,8 +1,10 @@
 package ray.common
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
+
 object Utils{
 
-  case class Vec3f(x: Double, y: Double, z: Double){
+  case class Vec3f(x: Double, y: Double, z: Double) extends Vector3D(x, y, z){
 
     def -(that: Vec3f) = Vec3f(this.x - that.x, this.y - that.y, this.z - that.z)
 
