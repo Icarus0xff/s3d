@@ -12,7 +12,7 @@ object Utils{
 
     def +(that: Double) = Vec3f(this.x + that, this.y + that, this.z + that)
 
-    def *(that: Vec3f) = Vec3f(this.x * that.x, this.y * that.y, this.z * that.z)
+    def colorMultiply(that: Vec3f) = Vec3f(this.x * that.x, this.y * that.y, this.z * that.z)
 
     def *(that: Double) = Vec3f(x * that, y * that, z * that)
 
@@ -37,7 +37,7 @@ object Utils{
     }
   }
 
-  case class Triangle(A: Vec3f, B: Vec3f, C: Vec3f) extends Object3D{
+  case class Triangle(A: Vec3f, B: Vec3f, C: Vec3f, color: Vector3D) extends Object3D{
     private val AB = B subtract A
     private val AC = C subtract A
     private val na = AB crossProduct AC
@@ -81,30 +81,7 @@ object Utils{
     override def normal(p: Vec3f): Vec3f = Vec3f(n.getX, n.getY, n.getZ)
   }
 
-  case class Plane(n: Vector3D, p: Vector3D) extends Object3D{
-    override def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
-      val d = n dotProduct p
-
-      val ta = d - (n dotProduct o)
-      val tb = n dotProduct dir
-      val t = ta / tb
-
-      tb match {
-        case m if Math.abs(m - 0) < 0.000001 =>
-          (false, 0)
-        case _ => {
-          (true, t)
-        }
-      }
-
-    }
-
-    override def normal(p: Vec3f): Vec3f = {
-      Vec3f(n.getX, n.getY, n.getZ)
-    }
-  }
-
-  case class Sphere(center: Vec3f, radius: Double) extends Object3D{
+  case class Sphere(center: Vec3f, radius: Double, color: Vector3D) extends Object3D{
 
     val radius2: Double = radius * radius
 

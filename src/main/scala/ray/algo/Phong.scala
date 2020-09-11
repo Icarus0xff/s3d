@@ -26,7 +26,10 @@ object Phong{
     val spec = Math.pow(Math.max(viewDir dot reflectDir, 0.0), 32)
     val specular = lightColor * (specularStrength * spec)
 
-    val result = (ambient + diffuse + specular) * Vec3f(.25, .45, .07)
+
+    val result1 = ambient add diffuse add specular
+    val result = Vec3f(result1 getX, result1 getY, result1 getZ) colorMultiply
+      Vec3f(obj.color getX, obj.color getY, obj.color getZ)
 
     new Color(result.x.toInt, result.y.toInt, result.z.toInt)
   }

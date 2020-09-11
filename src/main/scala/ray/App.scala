@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage
 import java.io.File
 
 import javax.imageio.ImageIO
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.algo.Phong
 import ray.common.Object3D
 import ray.common.Utils.{Sphere, Triangle, Vec3f}
@@ -14,15 +15,17 @@ object App{
   val width = 1 to 1500 toArray
 
   val eye = Vec3f(width.size / 2, height.size / 2, -800f)
-  val sphere = Sphere(Vec3f(1000, 900, 200f), 256f)
-  val sphere1 = Sphere(Vec3f(200, 700, 200f), 256f)
-  val light = Sphere(Vec3f(400, 200, 1000f), 1)
+  val sphere = Sphere(Vec3f(1000, 900, 200f), 256f, new Vector3D(.25, .45, .07))
+  val sphere1 = Sphere(Vec3f(200, 700, 200f), 256f, new Vector3D(.5, .5, .5))
+
+  val light = Sphere(Vec3f(400, 200, 1000f), 1, new Vector3D(.25, .45, .07))
 
   private val large = 1000000000
   val triangle = Triangle(
     Vec3f(-1000, -1000, 1200), //a
     Vec3f(0, large, 1200), //b
     Vec3f(large, large, 1200), //c
+    color = new Vector3D(.6, 0, .6)
   )
 
 
