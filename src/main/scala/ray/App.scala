@@ -102,26 +102,17 @@ object App{
 
 
       phit: Vec3f = eye add (nearestObj.dir scalarMultiply (nearestObj.d))
-      htoL: Vec3f = (light.center subtract phit) normalize()
+      hitToLightDir: Vec3f = (light.center subtract phit) normalize()
 
-
+      otherObjs = objs diff Set(nearestObj.obj)
+      notIntersectedObjs = otherObjs.takeWhile(_.intersect(phit, hitToLightDir)._1 == false)
     } yield {
-
-      val fuckni = for {
-        otherObjs <- objs diff Set(nearestObj.obj)
-        secondIntersection = otherObjs.intersect(phit, htoL)
-        if secondIntersection._1
-      } yield secondIntersection
-
-      val allfuck = fuckni.foldLeft((false, 0)) { (l, r) => (l._1 || r._1, 0) }
-
-      val c = allfuck match {
-        case (true, 0) =>
-          Color.BLACK
-        //Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, 0, 0)
-        case _ => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .2, 0.8)
+      
+      val c = otherObjs.size - notIntersectedObjs.size match {
+        case 0 => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .2, 0.8)
+        case _ =>
+          Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, 0, 0)
       }
-
 
       (is._1._1, is._1._2, c)
     }
