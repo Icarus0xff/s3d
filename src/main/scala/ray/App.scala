@@ -15,9 +15,9 @@ object App{
   val width = 1 to 1500 toArray
 
   val eye = Vec3f(width.size / 2, height.size / 2, -800f)
-  val sphere = Sphere(Vec3f(700, 700, 400f), 200f, new Vector3D(.25, .45, .07))
+  val sphere = Sphere(Vec3f(700, 700, 400f), 200f, new Vector3D(.25, 0, 0))
   val sphere1 = Sphere(Vec3f(200, 700, 200f), 256f, new Vector3D(.5, .5, .5))
-  val sphere2 = Sphere(Vec3f(300, 200, 250f), 40, new Vector3D(.25, .45, .07))
+
 
   val light = Sphere(Vec3f(700, 100, 600f), 1, new Vector3D(.25, .45, .07))
 
@@ -65,7 +65,7 @@ object App{
       x <- 0 to 1599
       y <- 0 to 1599
     } yield {
-      newBufferedImage.setRGB(x, y, Color.GRAY.getRGB)
+      newBufferedImage.setRGB(x, y, Color.BLUE.getRGB)
     }
 
     render(pixs, eye, Set(triangle1, triangle, floor, sphere1, sphere)).foreach {
@@ -113,12 +113,52 @@ object App{
       val c = otherObjs.size - notIntersectedObjs.size match {
         case 0 =>
           nearestObj.obj.reflective match {
-            case false => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .3, 0.8)
-            case true => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .3, 0.8)
+            case false => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .3, 0.8, nearestObj.obj.color)
+            case true =>
+              val n = nearestObj.obj.normal(phit)
+              val reflect = nearestObj.dir.subtract(n scalarMultiply (2 * (n dotProduct nearestObj.dir)))
+
+              val fuck = otherObjs.map(x => {
+                val r = x.intersect(phit, reflect)
+                (x, r._1, r._2)
+              }).reduce {
+                (l, r) =>
+                  if (l._3 > r._3) {
+                    r
+                  } else {
+                    l
+                  }
+              }
+
+              println(reflect)
+              val c: Color = Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .3, 0.8,
+                nearestObj.obj.color add (fuck._1.color scalarMultiply (0.5)))
+              //import ray.common.Utils._
+              //val c: Color = fuck._1.color scalarMultiply 256
+              c
+
           }
         case _ =>
           // shadow
-          Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .05, .1)
+          val n = nearestObj.obj.normal(phit)
+          val reflect = nearestObj.dir.subtract(n scalarMultiply (2 * (n dotProduct nearestObj.dir)))
+
+          val fuck = otherObjs.map(x => {
+            val r = x.intersect(phit, reflect)
+            (x, r._1, r._2)
+          }).reduce {
+            (l, r) =>
+              if (l._3 > r._3) {
+                r
+              } else {
+                l
+              }
+          }
+
+          val ppp = nearestObj.obj.color add (fuck._1.color scalarMultiply (0.5))
+          val c: Color = Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .05, .1, ppp)
+          c
+
       }
 
       (rayIntersection._1._1, rayIntersection._1._2, c)
