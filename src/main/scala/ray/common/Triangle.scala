@@ -3,7 +3,7 @@ package ray.common
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.common.Utils.Vec3f
 
-case class Triangle(A: Vec3f, B: Vec3f, C: Vec3f, color: Vector3D) extends Object3D{
+case class Triangle(A: Vec3f, B: Vec3f, C: Vec3f, color: Vector3D, reflective: Boolean = false) extends Object3D{
   private val AB = B subtract A
   private val AC = C subtract A
   private val na = AB crossProduct AC

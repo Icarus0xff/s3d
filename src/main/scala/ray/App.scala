@@ -41,7 +41,8 @@ object App{
     Vec3f(100, 1300, -100), //a
     Vec3f(1400, 1300, -100), //b
     Vec3f(100, 1300, 1400), //c
-    color = new Vector3D(.5, .5, .02)
+    color = new Vector3D(.5, .5, .02),
+    reflective = true
   )
 
 
@@ -110,7 +111,11 @@ object App{
       )
     } yield {
       val c = otherObjs.size - notIntersectedObjs.size match {
-        case 0 => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .3, 0.8)
+        case 0 =>
+          nearestObj.obj.reflective match {
+            case false => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .3, 0.8)
+            case true => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .3, 0.8)
+          }
         case _ =>
           // shadow
           Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .05, .1)

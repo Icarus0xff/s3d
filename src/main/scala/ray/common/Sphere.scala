@@ -4,7 +4,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.common.Utils.Vec3f
 
 
-case class Sphere(center: Vec3f, radius: Double, color: Vector3D) extends Object3D{
+case class Sphere(center: Vec3f, radius: Double, color: Vector3D, reflective: Boolean = false) extends Object3D{
 
   val radius2: Double = radius * radius
 
