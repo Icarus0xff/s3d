@@ -8,7 +8,7 @@ import javax.imageio.ImageIO
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.algo.Phong
 import ray.common.Utils.Vec3f
-import ray.common.{Object3D, Sphere, Triangle, Utils}
+import ray.common.{Object3D, Sphere, Triangle}
 
 object App{
   val height = 1 to 1400 toArray
@@ -82,39 +82,27 @@ object App{
 
   private def render(pixs: Array[(Int, Int)], eye: Vec3f, objs: Set[Object3D]): Array[(Int, Int, Color)] = {
 
-    import Utils._
+    val pixToEyePathAllIntersectedObjs = rayIntersections(pixs, eye, objs)
+      .groupBy(x => x.pix)
 
-    val pixToEyePathAllIntersectedObjs = (for {
-      pix <- pixs
-      obj <- objs
+    val pixColor = renderPix(eye, objs, pixToEyePathAllIntersectedObjs)
 
-      eyeToPix = computeRay(eye, pix)
-      intersection = obj.intersect(eye, eyeToPix)
+    pixColor toArray
 
-      if intersection._1
-    } yield PixIntersectedObj(pix, intersection._1, eyeToPix, intersection._2, obj)).groupBy(x => x.pix)
+  }
 
-    val pixColor = for {
-      pixIntersection <- pixToEyePathAllIntersectedObjs
-      intersectedObjs = pixIntersection._2
+  private def renderPix(eye: Vec3f, objs: Set[Object3D], rayPathAllIntersectedObjs: Map[(Int, Int), Array[PixIntersectedObj]]) = {
+    for {
+      rayIntersection <- rayPathAllIntersectedObjs
+      intersectedObjs = rayIntersection._2
 
-      nearestObj = intersectedObjs.reduce {
-        (a, b) =>
-          if (a.d < b.d) {
-            a
-          } else {
-            b
-          }
-      }
-
+      nearestObj = seekNearestObj(intersectedObjs)
+      otherObjs = objs diff Set(nearestObj.obj)
 
       phit: Vec3f = eye add (nearestObj.dir scalarMultiply (nearestObj.d))
       phitToLight = light.center subtract phit
       maxDistance = light.center.distance(phit)
       hitToLightDir: Vec3f = phitToLight normalize()
-
-      otherObjs = objs diff Set(nearestObj.obj)
-
       notIntersectedObjs = otherObjs.takeWhile(x => {
         val r = x.intersect(phit, hitToLightDir)
         r._1 == false
@@ -124,14 +112,35 @@ object App{
       val c = otherObjs.size - notIntersectedObjs.size match {
         case 0 => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .3, 0.8)
         case _ =>
+          // shadow
           Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .05, .1)
       }
 
-      (pixIntersection._1._1, pixIntersection._1._2, c)
+      (rayIntersection._1._1, rayIntersection._1._2, c)
     }
+  }
 
-    pixColor toArray
+  private def seekNearestObj(intersectedObjs: Array[PixIntersectedObj]) = {
+    intersectedObjs.reduce {
+      (a, b) =>
+        if (a.d < b.d) {
+          a
+        } else {
+          b
+        }
+    }
+  }
 
+  private def rayIntersections(pixs: Array[(Int, Int)], eye: Vec3f, objs: Set[Object3D]) = {
+    for {
+      pix <- pixs
+      obj <- objs
+
+      eyeToPix = computeRay(eye, pix)
+      intersection = obj.intersect(eye, eyeToPix)
+
+      if intersection._1
+    } yield PixIntersectedObj(pix, intersection._1, eyeToPix, intersection._2, obj)
   }
 
   private def computeRay(eye: Vec3f, xy: (Int, Int)) = {
