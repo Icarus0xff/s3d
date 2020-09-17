@@ -19,7 +19,7 @@ object App{
   val sphere1 = Sphere(Vec3f(200, 700, 200f), 256f, new Vector3D(.5, .5, .5))
   val sphere2 = Sphere(Vec3f(300, 200, 250f), 40, new Vector3D(.25, .45, .07))
 
-  val light = Sphere(Vec3f(700, 100, 200f), 1, new Vector3D(.25, .45, .07))
+  val light = Sphere(Vec3f(700, 100, 600f), 1, new Vector3D(.25, .45, .07))
 
 
   private val large = 1000000000
@@ -117,11 +117,10 @@ object App{
 
       notIntersectedObjs = otherObjs.takeWhile(x => {
         val r = x.intersect(phit, hitToLightDir)
-        r._1 == false || r._2 > maxDistance
+        r._1 == false
       }
       )
     } yield {
-
       val c = otherObjs.size - notIntersectedObjs.size match {
         case 0 => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .3, 0.8)
         case _ =>
