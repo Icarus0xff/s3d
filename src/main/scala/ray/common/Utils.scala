@@ -10,6 +10,8 @@ object Utils{
 
   implicit def vector3DToColor(s: Vector3D): Color = new Color(s.getX toInt, s.getY toInt, s.getZ toInt)
 
+  implicit def colorToVector3D(s: Color): Vector3D = new Vector3D(s.getRed, s.getGreen, s.getBlue)
+
   case class Vec3f(x: Double, y: Double, z: Double) extends Vector3D(x, y, z){
 
 
