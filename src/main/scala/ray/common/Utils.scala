@@ -15,7 +15,7 @@ object Utils{
   case class Vec3f(x: Double, y: Double, z: Double) extends Vector3D(x, y, z){
 
 
-    def -(that: Vec3f) = Vec3f(this.x - that.x, this.y - that.y, this.z - that.z)
+    def -(that: Vec3f) = this subtract that
 
     def +(that: Vec3f) = Vec3f(this.x + that.x, this.y + that.y, this.z + that.z)
 

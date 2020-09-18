@@ -1,10 +1,11 @@
 package ray.common
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
+import ray.common.Surface.Surface
 import ray.common.Utils.Vec3f
 
 
-case class Sphere(center: Vec3f, radius: Double, color: Vector3D, reflective: Boolean = false) extends Object3D{
+case class Sphere(center: Vec3f, radius: Double, color: Vector3D, surface: Surface = Surface.REGULAR) extends Object3D{
 
   val radius2: Double = radius * radius
 
@@ -12,12 +13,12 @@ case class Sphere(center: Vec3f, radius: Double, color: Vector3D, reflective: Bo
   override def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
     val L = center - o
 
-    val tca = L dot dir
+    val tca = L dotProduct dir
     if (tca < 0) {
       return (false, 0)
     }
 
-    val d2 = (L dot L) - tca * tca
+    val d2 = (L dotProduct L) - tca * tca
     if (d2 > radius2) {
       return (false, 0)
     }
