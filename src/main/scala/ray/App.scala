@@ -7,34 +7,75 @@ import java.io.File
 import javax.imageio.ImageIO
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.algo.Phong
-import ray.common.Utils.{Sphere, Triangle, Vec3f}
-import ray.common.{Object3D, Utils}
+import ray.common.Utils.Vec3f
+import ray.common.{Object3D, Sphere, Triangle}
 
 object App{
-  val height = 1 to 1400 toArray
-  val width = 1 to 1500 toArray
+  val height = 1 to 1500 toArray
+  val width = 1 to 1600 toArray
 
-  val eye = Vec3f(width.size / 2, height.size / 2, -800f)
-  val sphere = Sphere(Vec3f(700, 700, 400f), 200f, new Vector3D(.25, .45, .07))
-  val sphere1 = Sphere(Vec3f(200, 700, 200f), 256f, new Vector3D(.5, .5, .5))
-  val sphere2 = Sphere(Vec3f(300, 200, 250f), 40, new Vector3D(.25, .45, .07))
+  val eye = Vec3f(width.size / 2, height.size / 2, -900f)
+  val smallSphere = Sphere(Vec3f(700, 600, 1000f), 300f, new Vector3D(.25, .4, 0))
+  val sphere1 = Sphere(Vec3f(1600, 900, 800f), 256f, new Vector3D(.5, .5, .5))
 
-  val light = Sphere(Vec3f(400, 200, 600f), 1, new Vector3D(.25, .45, .07))
-  val light1 = Sphere(Vec3f(420, 220, 620f), 10, new Vector3D(.25, .45, .07))
+
+  val light = Sphere(Vec3f(900, 100, 600f), 10, new Vector3D(.25, .45, .07))
+
 
   private val large = 1000000000
   val triangle = Triangle(
     Vec3f(0, -1200, 1700), //a
     Vec3f(0, 1200, 1700), //b
     Vec3f(2400, 1200, 1700), //c
+    color = new Vector3D(.6, 0, .6),
+    reflective = false
+  )
+
+  val triangleBack = Triangle(
+    Vec3f(0, -1200, -1000), //a
+    Vec3f(0, 1200, -1000), //b
+    Vec3f(2400, 1200, -1000), //c
     color = new Vector3D(.6, 0, .6)
   )
 
+  val triangle1 = Triangle(
+    Vec3f(0, -1200, 1700), //a
+    Vec3f(2400, 1200, 1700), //c
+    Vec3f(2400, -1200, 1700), //b
+    color = new Vector3D(0, .4, 0),
+    reflective = false
+  )
+
+  val triangleLeft = Triangle(
+    Vec3f(0, -1200, 1700), //a
+    Vec3f(0, 1200, 100), //a
+    Vec3f(0, 1200, 1700), //a
+    color = new Vector3D(0, 0, .6),
+    //reflective = true
+  )
+
+  val triangleRight = Triangle(
+    Vec3f(2400, -1200, 1700), //a
+    Vec3f(2400, 1200, 1700), //a
+    Vec3f(2400, 1200, 100), //a
+    color = new Vector3D(0, .3, .4),
+    //reflective = true
+  )
+
   val floor = Triangle(
-    Vec3f(100, 1300, -100), //a
-    Vec3f(1400, 1300, -100), //b
-    Vec3f(100, 1300, 1400), //c
-    color = new Vector3D(.5, .5, .02)
+    Vec3f(0, 1200, 100), //a
+    Vec3f(2400, 1200, 1700), //b
+    Vec3f(0, 1200, 1700), //c
+    color = new Vector3D(.5, .5, .02),
+    reflective = true
+  )
+
+  val floor1 = Triangle(
+    Vec3f(0, 1200, 100), //a
+    Vec3f(2400, 1200, 100), //b
+    Vec3f(2400, 1200, 1700), //b
+    color = new Vector3D(.5, .5, .02),
+    reflective = true
   )
 
 
@@ -51,16 +92,17 @@ object App{
     }
 
 
-    val newBufferedImage = new BufferedImage(1600, 1600, BufferedImage.TYPE_INT_RGB)
+    val hw = 1700
+    val newBufferedImage = new BufferedImage(hw, hw, BufferedImage.TYPE_INT_RGB)
 
     for {
-      x <- 0 to 1599
-      y <- 0 to 1599
+      x <- 0 to hw - 1
+      y <- 0 to hw - 1
     } yield {
       newBufferedImage.setRGB(x, y, Color.GRAY.getRGB)
     }
 
-    render(pixs, eye, Set(triangle, floor, sphere1, sphere)).foreach {
+    renderScene(pixs, eye, Set(triangle1, triangle, triangleLeft, triangleRight, floor, floor1, sphere1, smallSphere)).foreach {
       pix =>
         newBufferedImage.setRGB(pix._1, pix._2, pix._3.getRGB)
     }
@@ -70,55 +112,104 @@ object App{
     ImageIO.write(newBufferedImage, "BMP", file)
   }
 
+  implicit def pixIntersectedObjToIntersectInfo(s: PixIntersectedObj): IntersectInfo = {
+    IntersectInfo(s.dir, s.d, s.obj)
+  }
 
-  case class Result(pix: (Int, Int), isIntersect: Boolean, dir: Vec3f, d: Double, obj: Object3D)
+  case class IntersectInfo(dir: Vec3f, d: Double, obj: Object3D)
 
-  private def render(pixs: Array[(Int, Int)], eye: Vec3f, objs: Set[Object3D]): Array[(Int, Int, Color)] = {
+  case class PixIntersectedObj(pix: (Int, Int), isIntersect: Boolean, dir: Vec3f, d: Double, obj: Object3D)
 
-    import Utils._
+  private def renderScene(pixs: Array[(Int, Int)], eye: Vec3f, objs: Set[Object3D]): Array[(Int, Int, Color)] = {
 
-    val pixIntersections = (for {
+    val pixToEyePathAllIntersectedObjs = rayIntersections(pixs, eye, objs)
+      .groupBy(x => x.pix)
+
+    val pixColor = for {
+      rayIntersection <- pixToEyePathAllIntersectedObjs
+
+
+    } yield {
+      val intersectInfoes = rayIntersection._2.map(x => {
+        val r: IntersectInfo = x
+        r
+      }
+
+      )
+      (rayIntersection._1._1, rayIntersection._1._2, render(eye, objs, intersectInfoes, 3))
+    }
+
+    pixColor toArray
+
+  }
+
+  private def render(eye: Vec3f, objs: Set[Object3D], intersectedObjs: Array[IntersectInfo], depth: Int): Color = {
+    if (depth == 0 || intersectedObjs.size == 0) {
+      return Color.GRAY
+    }
+    val nearestObj = seekNearestObj(intersectedObjs)
+    val otherObjs = objs diff Set(nearestObj.obj)
+
+    val phit: Vec3f = eye add (nearestObj.dir scalarMultiply (nearestObj.d))
+    val phitToLight = light.center subtract phit
+    val maxDistance = light.center.distance(phit)
+    val hitToLightDir: Vec3f = phitToLight normalize()
+    val notIntersectedObjs = otherObjs.takeWhile { x =>
+      val r = x.intersect(phit, hitToLightDir)
+      r._1 == false
+    }
+
+    val c = otherObjs.size - notIntersectedObjs.size match {
+      case 0 =>
+        render2(eye, objs, depth, nearestObj, phit, .4, .8)
+      case _ =>
+        render2(eye, objs, depth, nearestObj, phit, .01, .01)
+    }
+
+    c
+  }
+
+  private def render2(eye: Vec3f, objs: Set[Object3D], depth: Int, nearestObj: IntersectInfo, phit: Vec3f, amb: Double, spec: Double) = {
+    nearestObj.obj.reflective match {
+      case true =>
+        val n = nearestObj.obj.normal(phit)
+        val reflect = nearestObj.dir.subtract(n scalarMultiply (2 * (n dotProduct nearestObj.dir)))
+
+        val z = for {
+          obj <- objs
+          intersection = obj.intersect(phit, reflect)
+          if intersection._1
+        } yield IntersectInfo(reflect, intersection._2, obj)
+
+        import ray.common.Utils._
+        val c: Vector3D = render(phit, objs, z.toArray, depth - 1)
+        val cc: Color = c scalarMultiply (.5)
+        cc
+      case false => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, amb, spec, nearestObj.obj.color)
+    }
+  }
+
+  private def seekNearestObj(intersectedObjs: Array[IntersectInfo]) = {
+    intersectedObjs.reduce {
+      (a, b) =>
+        if (a.d < b.d) {
+          a
+        } else {
+          b
+        }
+    }
+  }
+
+  private def rayIntersections(pixs: Array[(Int, Int)], eye: Vec3f, objs: Set[Object3D]) = {
+    for {
       pix <- pixs
       obj <- objs
 
       eyeToPix = computeRay(eye, pix)
       intersection = obj.intersect(eye, eyeToPix)
+
       if intersection._1
-
-    } yield Result(pix, intersection._1, eyeToPix, intersection._2, obj)).groupBy(x => x.pix)
-
-    val pixNearestObj = for {
-      is <- pixIntersections
-      results = is._2
-
-      nearestObj = results.reduce {
-        (a, b) =>
-          if (a.d < b.d) {
-            a
-          } else {
-            b
-          }
-      }
-
-
-      phit: Vec3f = eye add (nearestObj.dir scalarMultiply (nearestObj.d))
-      hitToLightDir: Vec3f = (light.center subtract phit) normalize()
-
-      otherObjs = objs diff Set(nearestObj.obj)
-      notIntersectedObjs = otherObjs.takeWhile(_.intersect(phit, hitToLightDir)._1 == false)
-    } yield {
-      
-      val c = otherObjs.size - notIntersectedObjs.size match {
-        case 0 => Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, .2, 0.8)
-        case _ =>
-          Phong.renderPix(eye, nearestObj.dir, nearestObj.d, light, nearestObj.obj, 0, 0)
-      }
-
-      (is._1._1, is._1._2, c)
-    }
-
-    pixNearestObj toArray
-
+    } yield PixIntersectedObj(pix, intersection._1, eyeToPix, intersection._2, obj)
   }
 
   private def computeRay(eye: Vec3f, xy: (Int, Int)) = {
