@@ -11,15 +11,15 @@ import ray.common.Utils.Vec3f
 import ray.common.{Object3D, Sphere, Triangle}
 
 object App{
-  val height = 1 to 1400 toArray
-  val width = 1 to 1500 toArray
+  val height = 1 to 1500 toArray
+  val width = 1 to 1600 toArray
 
-  val eye = Vec3f(width.size / 2, height.size / 2, -800f)
-  val smallSphere = Sphere(Vec3f(700, 700, 1000f), 200f, new Vector3D(.25, .25, 0))
-  val sphere1 = Sphere(Vec3f(200, 700, 200f), 256f, new Vector3D(.5, .5, .5))
+  val eye = Vec3f(width.size / 2, height.size / 2, -900f)
+  val smallSphere = Sphere(Vec3f(700, 600, 1000f), 300f, new Vector3D(.25, .4, 0))
+  val sphere1 = Sphere(Vec3f(1600, 900, 800f), 256f, new Vector3D(.5, .5, .5))
 
 
-  val light = Sphere(Vec3f(700, 100, 600f), 1, new Vector3D(.25, .45, .07))
+  val light = Sphere(Vec3f(900, 100, 600f), 10, new Vector3D(.25, .45, .07))
 
 
   private val large = 1000000000
@@ -27,6 +27,14 @@ object App{
     Vec3f(0, -1200, 1700), //a
     Vec3f(0, 1200, 1700), //b
     Vec3f(2400, 1200, 1700), //c
+    color = new Vector3D(.6, 0, .6),
+    reflective = false
+  )
+
+  val triangleBack = Triangle(
+    Vec3f(0, -1200, -1000), //a
+    Vec3f(0, 1200, -1000), //b
+    Vec3f(2400, 1200, -1000), //c
     color = new Vector3D(.6, 0, .6)
   )
 
@@ -34,14 +42,38 @@ object App{
     Vec3f(0, -1200, 1700), //a
     Vec3f(2400, 1200, 1700), //c
     Vec3f(2400, -1200, 1700), //b
-    color = new Vector3D(0, .6, 0),
+    color = new Vector3D(0, .4, 0),
+    reflective = false
+  )
+
+  val triangleLeft = Triangle(
+    Vec3f(0, -1200, 1700), //a
+    Vec3f(0, 1200, 100), //a
+    Vec3f(0, 1200, 1700), //a
+    color = new Vector3D(0, 0, .6),
+    //reflective = true
+  )
+
+  val triangleRight = Triangle(
+    Vec3f(2400, -1200, 1700), //a
+    Vec3f(2400, 1200, 1700), //a
+    Vec3f(2400, 1200, 100), //a
+    color = new Vector3D(0, .3, .4),
     //reflective = true
   )
 
   val floor = Triangle(
-    Vec3f(100, 1300, -100), //a
-    Vec3f(1400, 1300, -100), //b
-    Vec3f(100, 1300, 1400), //c
+    Vec3f(0, 1200, 100), //a
+    Vec3f(2400, 1200, 1700), //b
+    Vec3f(0, 1200, 1700), //c
+    color = new Vector3D(.5, .5, .02),
+    reflective = true
+  )
+
+  val floor1 = Triangle(
+    Vec3f(0, 1200, 100), //a
+    Vec3f(2400, 1200, 100), //b
+    Vec3f(2400, 1200, 1700), //b
     color = new Vector3D(.5, .5, .02),
     reflective = true
   )
@@ -60,16 +92,17 @@ object App{
     }
 
 
-    val newBufferedImage = new BufferedImage(1600, 1600, BufferedImage.TYPE_INT_RGB)
+    val hw = 1700
+    val newBufferedImage = new BufferedImage(hw, hw, BufferedImage.TYPE_INT_RGB)
 
     for {
-      x <- 0 to 1599
-      y <- 0 to 1599
+      x <- 0 to hw - 1
+      y <- 0 to hw - 1
     } yield {
-      newBufferedImage.setRGB(x, y, Color.BLUE.getRGB)
+      newBufferedImage.setRGB(x, y, Color.GRAY.getRGB)
     }
 
-    renderScene(pixs, eye, Set(triangle1, triangle, floor, sphere1, smallSphere)).foreach {
+    renderScene(pixs, eye, Set(triangle1, triangle, triangleLeft, triangleRight, floor, floor1, sphere1, smallSphere)).foreach {
       pix =>
         newBufferedImage.setRGB(pix._1, pix._2, pix._3.getRGB)
     }
@@ -112,7 +145,7 @@ object App{
 
   private def render(eye: Vec3f, objs: Set[Object3D], intersectedObjs: Array[IntersectInfo], depth: Int): Color = {
     if (depth == 0 || intersectedObjs.size == 0) {
-      return Color.BLACK
+      return Color.GRAY
     }
     val nearestObj = seekNearestObj(intersectedObjs)
     val otherObjs = objs diff Set(nearestObj.obj)
