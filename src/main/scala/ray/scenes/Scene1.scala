@@ -28,7 +28,6 @@ object Scene1{
     Vec3f(0, 1200, 100), //a
     Vec3f(0, 1200, 1700), //a
     color = new Vector3D(0, 0, .6),
-    //reflective = true
   )
 
   val triangleRight = Triangle(
@@ -36,7 +35,6 @@ object Scene1{
     Vec3f(2400, 1200, 1700), //a
     Vec3f(2400, 1200, 100), //a
     color = new Vector3D(0, .3, .4),
-    //reflective = true
   )
 
   val floor = Triangle(
@@ -55,6 +53,6 @@ object Scene1{
     surface = Surface.REFLECTIVE
   )
 
-  val scene: Set[Object3D] = Set(triangle1, triangle, triangleLeft, triangleRight, floor, floor1, sphere1,light)
+  val scene: Set[Object3D] = Set(triangle1, triangle, triangleLeft, triangleRight, floor, floor1, sphere1)
 
 }
