@@ -1,39 +1,31 @@
 package ray.common
 
+import com.badlogic.gdx.math.collision.Ray
+import com.badlogic.gdx.math.{Intersector, Vector3}
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
+import ray.common.Surface.Surface
 import ray.common.Utils.Vec3f
 
 
-case class Sphere(center: Vec3f, radius: Double, color: Vector3D, reflective: Boolean = false) extends Object3D{
+case class Sphere(center: Vec3f, radius: Double, color: Vector3D, surface: Surface = Surface.REGULAR) extends Object3D{
 
   val radius2: Double = radius * radius
 
 
+  implicit def myToVector3(s: Vec3f): Vector3 = {
+    new Vector3(s.x.toFloat, s.y.toFloat, s.z.toFloat)
+  }
+
+  implicit def vector3ToMy(s: Vector3): Vec3f = {
+    Vec3f(s.x, s.y, s.z)
+  }
+
   override def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double) = {
-    val L = center - o
+    val ip = new Vector3()
+    val ray = new Ray(o, dir)
+    val rs = Intersector.intersectRaySphere(ray, center, radius.toFloat, ip)
 
-    val tca = L dot dir
-    if (tca < 0) {
-      return (false, 0)
-    }
-
-    val d2 = (L dot L) - tca * tca
-    if (d2 > radius2) {
-      return (false, 0)
-    }
-
-    val thc = Math.sqrt(radius2 - d2);
-    val t0 = tca - thc
-    val t1 = tca + thc
-
-    (t0, t1) match {
-      case (a, b) if a < 0 && b < 0 =>
-        (false, 0)
-      case (a, b) if a >= b =>
-        (true, a)
-      case (a, b) if a < b =>
-        (true, b)
-    }
+    (rs, ip distance o)
   }
 
   override def normal(p: Vec3f): Vec3f = {
