@@ -5,10 +5,10 @@ import ray.common.Utils.Vec3f
 import ray.common.{Object3D, Sphere, Surface, Triangle}
 
 object Scene2{
-  val smallSphere = Sphere(Vec3f(700, 600, 1400f), 300f, new Vector3D(.25, .4, 0), surface = Surface.REFLECTIVE)
-  val sphere1 = Sphere(Vec3f(1600, 900, 800f), 256f, new Vector3D(.5, .5, .5))
+  val smallSphere = Sphere(Vec3f(700, 600, 1400f), 300f, new Vector3D(.25, .4, 0))
 
-  val sphereRefraction = Sphere(Vec3f(1700, 100, 900f), 200f, new Vector3D(.3, .1, .5))
+  val sphere1 = Sphere(Vec3f(1600, 300, 600f), 256f, new Vector3D(.5, .5, .5), surface = Surface.REFRACTIVE)
+  val sphereRefraction = Sphere(Vec3f(1600, 100, 900f), 200f, new Vector3D(.3, .1, .5))
 
 
   val light = Sphere(Vec3f(900, 100, 1000f), 80, new Vector3D(.25, .45, .07))

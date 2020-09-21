@@ -101,20 +101,21 @@ object App{
 
     val c = otherObjs.size - notIntersectedObjs.size match {
       case 0 =>
-        render$(eye, objs, depth, nearestObj, phit, .4, .6)
+        render$(eye, objs, depth, nearestObj, phit, .4, .6, true)
       case _ =>
-        render$(eye, objs, depth, nearestObj, phit, .01, .01)
+        render$(eye, objs, depth, nearestObj, phit, .01, .01, true)
     }
 
     c
   }
 
-  private def render$(eye: Vec3f, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus, phit: Vec3f, amb: Double, spec: Double): Color = {
+  private def render$(eye: Vec3f, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus, phit: Vec3f,
+                      amb: Double, spec: Double, isAir: Boolean): Color = {
     import ray.common.Utils._
+    lazy val n = nearestIntersection.obj.normal(phit)
 
     nearestIntersection.obj.surface match {
       case Surface.REFLECTIVE =>
-        val n = nearestIntersection.obj.normal(phit)
         val reflect = nearestIntersection.originDir.subtract(n scalarMultiply (2 * (n dotProduct nearestIntersection.originDir)))
 
         val intersectStatuses = for {
@@ -125,6 +126,27 @@ object App{
 
         render(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .5
       case Surface.REGULAR => Phong.renderPix(eye, nearestIntersection.originDir, nearestIntersection.distance, light, nearestIntersection.obj, amb, spec, nearestIntersection.obj.color)
+      case Surface.REFRACTIVE =>
+        val n1 = 1
+        val n2 = 1.52
+
+        val viewDir = phit subtract eye
+        val tt = (viewDir add (n scalarMultiply (n dotProduct viewDir))) scalarMultiply (n1 / n2)
+        val tt1 = 1 - (n1 * n1) / (n2 * n2) * (1 - Math.pow(viewDir dotProduct n, 2))
+        val tt2 = n scalarMultiply Math.sqrt(tt1)
+        val t = tt subtract tt2
+
+
+        val intersectStatuses = for {
+          obj <- objs diff Set(nearestIntersection.obj)
+          intersection = obj.intersect(phit, t.normalize())
+          if intersection._1
+        } yield IntersectStatus(t.normalize(), intersection._2, obj)
+
+
+        render(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .5
+
+
       case Surface.LIGHT => Color.WHITE
 
     }
