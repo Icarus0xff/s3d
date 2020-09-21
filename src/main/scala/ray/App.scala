@@ -5,9 +5,9 @@ import java.awt.image.BufferedImage
 import java.io.File
 
 import javax.imageio.ImageIO
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.algo.Phong
 import ray.common.Material.Material
-import ray.common.Utils.Vec3f
 import ray.common.{Material, Object3D, Surface}
 import ray.scenes.Scene2
 
@@ -17,7 +17,7 @@ object App{
   val height = 1 to 1500 toArray
   val width = 1 to 1600 toArray
 
-  val eye = Vec3f(width.size / 2, height.size / 2, -900f)
+  val eye = new Vector3D(width.size / 2, height.size / 2, -900f)
   val light = scene.light
 
 
@@ -59,11 +59,11 @@ object App{
     IntersectStatus(s.dir, s.d, s.obj)
   }
 
-  case class IntersectStatus(originDir: Vec3f, distance: Double, obj: Object3D)
+  case class IntersectStatus(originDir: Vector3D, distance: Double, obj: Object3D)
 
-  case class PixIntersectedObj(pix: (Int, Int), dir: Vec3f, d: Double, obj: Object3D)
+  case class PixIntersectedObj(pix: (Int, Int), dir: Vector3D, d: Double, obj: Object3D)
 
-  private def renderScene(pixs: Array[(Int, Int)], eye: Vec3f, objs: Set[Object3D]): Array[(Int, Int, Color)] = {
+  private def renderScene(pixs: Array[(Int, Int)], eye: Vector3D, objs: Set[Object3D]): Array[(Int, Int, Color)] = {
 
     val pixToEyePathAllIntersectedObjs = rayIntersections(pixs, eye, objs)
       .groupBy(x => x.pix)
@@ -84,17 +84,17 @@ object App{
 
   }
 
-  private def trace(eye: Vec3f, objs: Set[Object3D], intersectedObjs: Array[IntersectStatus], depth: Int): Color = {
+  private def trace(eye: Vector3D, objs: Set[Object3D], intersectedObjs: Array[IntersectStatus], depth: Int): Color = {
     if (depth == 0 || intersectedObjs.size == 0) {
       return Color.GRAY
     }
     val nearestObj = seekNearestObj(intersectedObjs)
     val otherObjs = objs diff Set(nearestObj.obj)
 
-    val phit: Vec3f = eye add (nearestObj.originDir scalarMultiply (nearestObj.distance))
+    val phit: Vector3D = eye add (nearestObj.originDir scalarMultiply (nearestObj.distance))
     val phitToLight = light.center subtract phit
     val maxDistance = light.center.distance(phit)
-    val hitToLightDir: Vec3f = phitToLight normalize()
+    val hitToLightDir: Vector3D = phitToLight normalize()
     val notIntersectedObjs = otherObjs.takeWhile { object3D =>
       val r = object3D.intersect(phit, hitToLightDir)
       r._1 == false || r._2 > maxDistance
@@ -110,7 +110,7 @@ object App{
     c
   }
 
-  private def trace$(eye: Vec3f, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus, phit: Vec3f,
+  private def trace$(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus, phit: Vector3D,
                      amb: Double, spec: Double, curMaterial: Material = Material.NONE): Color = {
     import ray.common.Utils._
     lazy val n = nearestIntersection.obj.normal(phit)
@@ -164,7 +164,7 @@ object App{
     }
   }
 
-  private def rayIntersections(pixs: Array[(Int, Int)], eye: Vec3f, objs: Set[Object3D]) = {
+  private def rayIntersections(pixs: Array[(Int, Int)], eye: Vector3D, objs: Set[Object3D]) = {
     for {
       pix <- pixs
       obj <- objs
@@ -176,16 +176,13 @@ object App{
     } yield PixIntersectedObj(pix, eyeToPix, intersection._2, obj)
   }
 
-  private def computeRay(eye: Vec3f, xy: (Int, Int)) = {
-    val pix = Vec3f(xy._1, xy._2, 0)
-    pix - eye normalize
+  private def computeRay(eye: Vector3D, xy: (Int, Int)) = {
+    val pix = new Vector3D(xy._1, xy._2, 0)
+    (pix subtract eye) normalize
   }
 
 
-
-
   case class IntersectResult(is: Boolean, t0: Double, t1: Double)
-
 
 
 }

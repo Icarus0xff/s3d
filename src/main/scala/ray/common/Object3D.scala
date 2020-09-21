@@ -2,7 +2,7 @@ package ray.common
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.common.Surface.Surface
-import ray.common.Utils.Vec3f
+
 
 
 object Surface extends Enumeration{
@@ -17,8 +17,8 @@ trait Object3D{
 
   val material = Material.NONE
 
-  def normal(p: Vec3f): Vec3f
+  def normal(p: Vector3D): Vector3D
 
-  def intersect(o: Vec3f, dir: Vec3f): (Boolean, Double)
+  def intersect(o: Vector3D, dir: Vector3D): (Boolean, Double)
 
 }
