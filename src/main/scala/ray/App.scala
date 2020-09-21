@@ -8,15 +8,16 @@ import javax.imageio.ImageIO
 import ray.algo.Phong
 import ray.common.Utils.Vec3f
 import ray.common.{Object3D, Surface}
-import ray.scenes.Scene1
+import ray.scenes.Scene2
 
 
 object App{
+  val scene = Scene2
   val height = 1 to 1500 toArray
   val width = 1 to 1600 toArray
 
   val eye = Vec3f(width.size / 2, height.size / 2, -900f)
-  val light = Scene1.light
+  val light = scene.light
 
 
 
@@ -43,7 +44,7 @@ object App{
       newBufferedImage.setRGB(x, y, Color.GRAY.getRGB)
     }
 
-    renderScene(pixs, eye, Scene1.scene).foreach {
+    renderScene(pixs, eye, scene.scene).foreach {
       pix =>
         newBufferedImage.setRGB(pix._1, pix._2, pix._3.getRGB)
     }
