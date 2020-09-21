@@ -6,8 +6,9 @@ import java.io.File
 
 import javax.imageio.ImageIO
 import ray.algo.Phong
+import ray.common.Material.Material
 import ray.common.Utils.Vec3f
-import ray.common.{Object3D, Surface}
+import ray.common.{Material, Object3D, Surface}
 import ray.scenes.Scene2
 
 
@@ -76,14 +77,14 @@ object App{
       }
 
       )
-      (rayIntersection._1._1, rayIntersection._1._2, render(eye, objs, statuses, 3))
+      (rayIntersection._1._1, rayIntersection._1._2, trace(eye, objs, statuses, 3))
     }
 
     pixColor toArray
 
   }
 
-  private def render(eye: Vec3f, objs: Set[Object3D], intersectedObjs: Array[IntersectStatus], depth: Int): Color = {
+  private def trace(eye: Vec3f, objs: Set[Object3D], intersectedObjs: Array[IntersectStatus], depth: Int): Color = {
     if (depth == 0 || intersectedObjs.size == 0) {
       return Color.GRAY
     }
@@ -101,16 +102,16 @@ object App{
 
     val c = otherObjs.size - notIntersectedObjs.size match {
       case 0 =>
-        render$(eye, objs, depth, nearestObj, phit, .4, .6, true)
+        trace$(eye, objs, depth, nearestObj, phit, .4, .6)
       case _ =>
-        render$(eye, objs, depth, nearestObj, phit, .01, .01, true)
+        trace$(eye, objs, depth, nearestObj, phit, .01, .01)
     }
 
     c
   }
 
-  private def render$(eye: Vec3f, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus, phit: Vec3f,
-                      amb: Double, spec: Double, isAir: Boolean): Color = {
+  private def trace$(eye: Vec3f, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus, phit: Vec3f,
+                     amb: Double, spec: Double, curMaterial: Material = Material.NONE): Color = {
     import ray.common.Utils._
     lazy val n = nearestIntersection.obj.normal(phit)
 
@@ -124,7 +125,7 @@ object App{
           if intersection._1
         } yield IntersectStatus(reflect, intersection._2, obj)
 
-        render(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .5
+        trace(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .5
       case Surface.REGULAR => Phong.renderPix(eye, nearestIntersection.originDir, nearestIntersection.distance, light, nearestIntersection.obj, amb, spec, nearestIntersection.obj.color)
       case Surface.REFRACTIVE =>
         val n1 = 1
@@ -134,17 +135,17 @@ object App{
         val tt = (viewDir add (n scalarMultiply (n dotProduct viewDir))) scalarMultiply (n1 / n2)
         val tt1 = 1 - (n1 * n1) / (n2 * n2) * (1 - Math.pow(viewDir dotProduct n, 2))
         val tt2 = n scalarMultiply Math.sqrt(tt1)
-        val t = tt subtract tt2
+        val t = (tt subtract tt2) normalize
 
 
         val intersectStatuses = for {
           obj <- objs diff Set(nearestIntersection.obj)
-          intersection = obj.intersect(phit, t.normalize())
+          intersection = obj.intersect(phit, t)
           if intersection._1
-        } yield IntersectStatus(t.normalize(), intersection._2, obj)
+        } yield IntersectStatus(t, intersection._2, obj)
 
 
-        render(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .5
+        trace(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .5
 
 
       case Surface.LIGHT => Color.WHITE

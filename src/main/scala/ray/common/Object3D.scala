@@ -10,9 +10,12 @@ object Surface extends Enumeration{
   val REGULAR, REFLECTIVE, REFRACTIVE, LIGHT = Value
 }
 
+
 trait Object3D{
   val color: Vector3D
   val surface: Surface
+
+  val material = Material.NONE
 
   def normal(p: Vec3f): Vec3f
 
