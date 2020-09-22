@@ -3,10 +3,11 @@ package ray.common
 import com.badlogic.gdx.math.collision.Ray
 import com.badlogic.gdx.math.{Intersector, Vector3}
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
+import ray.common.Material.Material
 import ray.common.Surface.Surface
 
 
-case class Sphere(center: Vector3D, radius: Double, color: Vector3D, surface: Surface = Surface.REGULAR) extends Object3D{
+case class Sphere(center: Vector3D, radius: Double, color: Vector3D, surface: Surface = Surface.REGULAR, material: Material = Material.AIR) extends Object3D{
 
   val radius2: Double = radius * radius
 

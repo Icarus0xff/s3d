@@ -4,3 +4,4 @@
 /.idea/
 /target/
 *.bmp
+.DS_Store

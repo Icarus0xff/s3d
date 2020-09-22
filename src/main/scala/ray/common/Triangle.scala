@@ -1,9 +1,11 @@
 package ray.common
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
+import ray.common.Material.Material
 import ray.common.Surface.Surface
 
-case class Triangle(A: Vector3D, B: Vector3D, C: Vector3D, color: Vector3D, surface: Surface = Surface.REGULAR) extends Object3D{
+case class Triangle(A: Vector3D, B: Vector3D, C: Vector3D, color: Vector3D, surface: Surface = Surface.REGULAR,
+                    material: Material = Material.AIR) extends Object3D{
   private val AB = B subtract A
   private val AC = C subtract A
   private val na = AB crossProduct AC

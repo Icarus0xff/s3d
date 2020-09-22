@@ -77,14 +77,15 @@ object App{
       }
 
       )
-      (rayIntersection._1._1, rayIntersection._1._2, trace(eye, objs, statuses, 3))
+      (rayIntersection._1._1, rayIntersection._1._2, trace(eye, objs, statuses, 3, Material.AIR))
     }
 
     pixColor toArray
 
   }
 
-  private def trace(eye: Vector3D, objs: Set[Object3D], intersectedObjs: Array[IntersectStatus], depth: Int): Color = {
+  private def trace(eye: Vector3D, objs: Set[Object3D], intersectedObjs: Array[IntersectStatus], depth: Int,
+                    curMaterial: Material): Color = {
     if (depth == 0 || intersectedObjs.size == 0) {
       return Color.GRAY
     }
@@ -102,16 +103,16 @@ object App{
 
     val c = otherObjs.size - notIntersectedObjs.size match {
       case 0 =>
-        trace$(eye, objs, depth, nearestObj, phit, .4, .6)
+        trace$(eye, objs, depth, nearestObj, phit, .4, .6, curMaterial)
       case _ =>
-        trace$(eye, objs, depth, nearestObj, phit, .01, .01)
+        trace$(eye, objs, depth, nearestObj, phit, .01, .01, curMaterial)
     }
 
     c
   }
 
   private def trace$(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus, phit: Vector3D,
-                     amb: Double, spec: Double, curMaterial: Material = Material.NONE): Color = {
+                     amb: Double, spec: Double, curMaterial: Material): Color = {
     import ray.common.Utils._
     lazy val n = nearestIntersection.obj.normal(phit)
 
@@ -125,11 +126,11 @@ object App{
           if intersection._1
         } yield IntersectStatus(reflect, intersection._2, obj)
 
-        trace(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .5
+        trace(phit, objs, intersectStatuses.toArray, depth - 1, curMaterial) scalarMultiply .5
       case Surface.REGULAR => Phong.renderPix(eye, nearestIntersection.originDir, nearestIntersection.distance, light, nearestIntersection.obj, amb, spec, nearestIntersection.obj.color)
       case Surface.REFRACTIVE =>
-        val n1 = 1
-        val n2 = 1.52
+        val n1 = curMaterial.eta
+        val n2 = nearestIntersection.obj.material.eta
 
         val viewDir = phit subtract eye
         val tt = (viewDir add (n scalarMultiply (n dotProduct viewDir))) scalarMultiply (n1 / n2)
@@ -145,7 +146,7 @@ object App{
         } yield IntersectStatus(t, intersection._2, obj)
 
 
-        trace(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .5
+        trace(phit, objs, intersectStatuses.toArray, depth - 1, nearestIntersection.obj.material) scalarMultiply .5
 
 
       case Surface.LIGHT => Color.WHITE
