@@ -21,7 +21,6 @@ object App{
   val light = scene.light
 
 
-
   def main(args: Array[String]): Unit = {
     rayTrace
   }
@@ -59,10 +58,6 @@ object App{
     IntersectStatus(s.dir, s.d, s.obj)
   }
 
-  case class IntersectStatus(originDir: Vector3D, distance: Double, obj: Object3D)
-
-  case class PixIntersectedObj(pix: (Int, Int), dir: Vector3D, d: Double, obj: Object3D)
-
   private def renderScene(pixs: Array[(Int, Int)], eye: Vector3D, objs: Set[Object3D]): Array[(Int, Int, Color)] = {
 
     val pixToEyePathAllIntersectedObjs = rayIntersections(pixs, eye, objs)
@@ -85,7 +80,7 @@ object App{
   }
 
   private def trace(eye: Vector3D, objs: Set[Object3D], intersectedObjs: Array[IntersectStatus], depth: Int,
-                    curMaterial: Material): Color = {
+                    curMaterial: Material = Material.AIR): Color = {
     if (depth == 0 || intersectedObjs.size == 0) {
       return Color.GRAY
     }
@@ -105,7 +100,6 @@ object App{
       case 0 =>
         trace$(eye, objs, depth, nearestObj, phit, .4, .6, curMaterial)
       case _ =>
-        //Color.YELLOW
         trace$(eye, objs, depth, nearestObj, phit, .01, .01, curMaterial)
     }
 
@@ -113,59 +107,107 @@ object App{
   }
 
   private def trace$(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus, phit: Vector3D,
-                     amb: Double, spec: Double, curMaterial: Material): Color = {
-    import ray.common.Utils._
-    lazy val n = nearestIntersection.obj.normal(phit)
+                     amb: Double, spec: Double, curMaterial: Material = Material.AIR): Color = {
+    lazy val hitNorm = nearestIntersection.obj.normal(phit)
 
     nearestIntersection.obj.surface match {
       case Surface.REFLECTIVE =>
-        val reflect = nearestIntersection.originDir.subtract(n scalarMultiply (2 * (n dotProduct nearestIntersection.originDir)))
-
-        val intersectStatuses = for {
-          obj <- objs diff Set(nearestIntersection.obj)
-          intersection = obj.intersect(phit, reflect)
-          if intersection._1
-        } yield IntersectStatus(reflect, intersection._2, obj)
-
-        trace(phit, objs, intersectStatuses.toArray, depth - 1, curMaterial) scalarMultiply .5
-      case Surface.REGULAR => Phong.renderPix(eye, nearestIntersection.originDir, nearestIntersection.distance, light, nearestIntersection.obj, amb, spec, nearestIntersection.obj.color)
+        computeReflection(objs, depth, nearestIntersection, phit, hitNorm)
+      case Surface.REGULAR => Phong.renderPix(eye, nearestIntersection.originDir, nearestIntersection.distance,
+        light, nearestIntersection.obj, amb, spec, nearestIntersection.obj.color)
       case Surface.REFRACTIVE =>
-        val viewDir = phit subtract eye
+        import ray.common.Utils._
+
+        val refl: Vector3D = computeReflection(objs, depth, nearestIntersection, phit, hitNorm)
+
+        val viewDir = (phit subtract eye) normalize
+        val (eta1: Double, eta2: Double) = computeEtaPair(viewDir, hitNorm)
+
+        val rdir = refractionDir(phit subtract eye, hitNorm, eta1, eta2)
+
+        val costheta1 = viewDir dotProduct hitNorm
+        val costheta2 = rdir dotProduct hitNorm
+
+        val fr1 = (eta2 * costheta1 - eta1 * costheta2) / (eta2 * costheta1 + eta1 * costheta2)
+        val fr2 = (eta1 * costheta2 - eta2 * costheta1) / (eta1 * costheta2 + eta2 * costheta1)
 
 
-        val costheta = viewDir.normalize() dotProduct nearestIntersection.obj.normal(phit)
+        val sinTheta2 = Math.sqrt(1 - costheta2 * costheta2)
 
-        val theta = Math.acos(costheta)
-
-        val (n1, n2) = theta match {
-          case v if v > -0.5 * Math.PI && v < 0.5 * Math.PI => (Material.AIR.eta, Material.GLASS.eta)
-          case _ =>
-
-            (Material.GLASS.eta, Material.AIR.eta)
+        val kr = sinTheta2 match {
+          case v if v > 0.999 => 1
+          case _ => 0.5 * (fr1 * fr1 + fr2 * fr2)
         }
 
 
-        val tt = (viewDir add (n scalarMultiply (n dotProduct viewDir))) scalarMultiply (n1 / n2)
-        val tt1 = 1 - (n1 * n1) / (n2 * n2) * (1 - Math.pow(viewDir dotProduct n, 2))
-        val tt2 = n scalarMultiply Math.sqrt(tt1)
-        val refractDir = (tt subtract tt2) normalize
+        val refr: Vector3D = kr match {
+          case krr if krr < 1 => computeRefraction(eye, objs, depth, nearestIntersection, phit, hitNorm)
+          case _ =>
+            Vector3D.ZERO
+        }
 
-
-        val phit1 = phit add (nearestIntersection.originDir scalarMultiply 16)
-
-        val intersectStatuses = for {
-          obj <- objs
-          intersection = obj.intersect(phit1, refractDir)
-          if intersection._1
-        } yield IntersectStatus(refractDir, intersection._2, obj)
-
-
-        trace(phit, objs, intersectStatuses.toArray, depth - 1, nearestIntersection.obj.material)
-
+        val r = refl scalarMultiply kr add (refr scalarMultiply (1 - kr))
+        r
 
       case Surface.LIGHT => Color.WHITE
 
     }
+  }
+
+  private def computeReflection(objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus, phit: Vector3D,
+                                n: Vector3D): Color = {
+    import ray.common.Utils._
+    val reflect = nearestIntersection.originDir.subtract(n scalarMultiply (2 * (n dotProduct nearestIntersection.originDir)))
+
+    val intersectStatuses = for {
+      obj <- objs diff Set(nearestIntersection.obj)
+      intersection = obj.intersect(phit, reflect)
+      if intersection._1
+    } yield IntersectStatus(reflect, intersection._2, obj)
+
+    trace(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .5
+  }
+
+  private def computeRefraction(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus,
+                                phit: Vector3D, n: Vector3D): Color = {
+    val eyeToPhit = phit subtract eye
+    val viewDir = eyeToPhit.normalize()
+
+    val (eta1: Double, eta2: Double) = computeEtaPair(viewDir, nearestIntersection.obj.normal(phit))
+
+    val refractDir = refractionDir(eyeToPhit, n, eta1, eta2)
+
+    val bias = nearestIntersection.originDir scalarMultiply 16
+
+    val phit1 = phit add bias
+    val intersectStatuses = for {
+      obj <- objs
+      intersection = obj.intersect(phit1, refractDir)
+      if intersection._1
+    } yield IntersectStatus(refractDir, intersection._2, obj)
+
+
+    trace(phit, objs, intersectStatuses.toArray, depth - 1, nearestIntersection.obj.material)
+  }
+
+  private def refractionDir(eyeToPhit: Vector3D, n: Vector3D, eta1: Double, eta2: Double): Vector3D = {
+    val tt = (eyeToPhit add (n scalarMultiply (n dotProduct eyeToPhit))) scalarMultiply (eta1 / eta2)
+    val tt1 = 1 - (eta1 * eta1) / (eta2 * eta2) * (1 - Math.pow(eyeToPhit dotProduct n, 2))
+    val tt2 = n scalarMultiply Math.sqrt(tt1)
+    val refractDir = (tt subtract tt2) normalize
+
+    refractDir
+  }
+
+  private def computeEtaPair(hitDir: Vector3D, norm: Vector3D) = {
+    val (eta1, eta2) = Math.acos(hitDir dotProduct norm) match {
+      case v if v > -0.5 * Math.PI && v < 0.5 * Math.PI =>
+        //inside object
+        (Material.AIR.eta, Material.GLASS.eta)
+      case _ =>
+        (Material.GLASS.eta, Material.AIR.eta)
+    }
+    (eta1, eta2)
   }
 
   private def seekNearestObj(intersectedObjs: Array[IntersectStatus]) = {
@@ -196,6 +238,9 @@ object App{
     (pix subtract eye) normalize
   }
 
+  case class IntersectStatus(originDir: Vector3D, distance: Double, obj: Object3D)
+
+  case class PixIntersectedObj(pix: (Int, Int), dir: Vector3D, d: Double, obj: Object3D)
 
   case class IntersectResult(is: Boolean, t0: Double, t1: Double)
 
