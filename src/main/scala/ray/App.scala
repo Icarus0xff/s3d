@@ -14,10 +14,15 @@ import ray.scenes.PlaneTest
 
 object App{
   val scene = PlaneTest
-  val height = 1 to 1500 toArray
-  val width = 1 to 1600 toArray
+  private val xi = 1900
+  private val yi = 1500
 
-  val eye = new Vector3D(width.size / 2, height.size / 2, -900f)
+
+  val width = 0 until xi toArray
+  val height = 0 until yi toArray
+
+
+  val eye = new Vector3D(xi / 2, yi / 2, -900f)
   val light = scene.light
 
 
@@ -34,12 +39,11 @@ object App{
     }
 
 
-    val hw = 1700
-    val newBufferedImage = new BufferedImage(hw, hw, BufferedImage.TYPE_INT_RGB)
+    val newBufferedImage = new BufferedImage(width.size, height.size, BufferedImage.TYPE_INT_RGB)
 
     for {
-      x <- 0 to hw - 1
-      y <- 0 to hw - 1
+      x <- 0 until xi
+      y <- 0 until yi
     } yield {
       newBufferedImage.setRGB(x, y, Color.GRAY.getRGB)
     }
@@ -50,8 +54,8 @@ object App{
     }
 
 
-    val file = new File("pic.bmp")
-    ImageIO.write(newBufferedImage, "BMP", file)
+    val file = new File("pic.png")
+    ImageIO.write(newBufferedImage, "PNG", file)
   }
 
   implicit def pixIntersectedObjToIntersectInfo(s: PixIntersectedObj): IntersectStatus = {
@@ -165,7 +169,7 @@ object App{
       if intersection._1
     } yield IntersectStatus(reflect, intersection._2, obj)
 
-    trace(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .5
+    trace(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .85
   }
 
   private def computeRefraction(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus,
@@ -200,8 +204,8 @@ object App{
   }
 
   private def computeEtaPair(hitDir: Vector3D, norm: Vector3D) = {
-    val (eta1, eta2) = Math.acos(hitDir dotProduct norm) match {
-      case v if v > -0.5 * Math.PI && v < 0.5 * Math.PI =>
+    val (eta1, eta2) = hitDir dotProduct norm match {
+      case v if v >= 0 && v <= 1 =>
         //inside object
         (Material.AIR.eta, Material.GLASS.eta)
       case _ =>
