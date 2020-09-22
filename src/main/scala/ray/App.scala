@@ -9,11 +9,11 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.algo.Phong
 import ray.common.Material.Material
 import ray.common.{Material, Object3D, Surface}
-import ray.scenes.Scene2
+import ray.scenes.PlaneTest
 
 
 object App{
-  val scene = Scene2
+  val scene = PlaneTest
   val height = 1 to 1500 toArray
   val width = 1 to 1600 toArray
 
