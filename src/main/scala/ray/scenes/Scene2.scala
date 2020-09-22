@@ -6,9 +6,9 @@ import ray.common._
 object Scene2{
   val smallSphere = Sphere(new Vector3D(700, 600, 1400f), 300f, new Vector3D(.25, .4, 0))
 
-  val sphereRefraction = Sphere(new Vector3D(1600, 900, 600f), 256f, new Vector3D(.5, .5, .5), surface = Surface.REFRACTIVE,
+  val sphereRefraction = Sphere(new Vector3D(1400, 100, 500f), 256f, new Vector3D(.5, .5, .5), surface = Surface.REFRACTIVE,
     material = Material.GLASS)
-  val sphere1 = Sphere(new Vector3D(1600, 100, 900f), 200f, new Vector3D(.3, .1, .5))
+  val sphere1 = Sphere(new Vector3D(1600, 100, 1000f), 200f, new Vector3D(.3, .1, .5))
 
 
   val light = Sphere(new Vector3D(900, 100, 1000f), 80, new Vector3D(.25, .45, .07))
