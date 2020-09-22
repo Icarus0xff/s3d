@@ -9,7 +9,7 @@ object Phong{
   def renderPix(eye: Vector3D, viewDir: Vector3D, eyeToPDistance: Double, light: Sphere, obj: Object3D, ambientStrength: Double, specularStrength: Double, colornew: Vector3D): Color = {
     val pHit = eye add (viewDir scalarMultiply eyeToPDistance)
 
-    val lightColor = new Vector3D(200, 200, 200)
+    val lightColor = new Vector3D(210, 210, 210)
     val ambient = lightColor scalarMultiply ambientStrength
 
     val norm = obj.normal(pHit)
