@@ -15,8 +15,8 @@ import ray.scenes.LightDraw
 
 object App{
   val scene = LightDraw
-  private val xi = 1900
-  private val yi = 1500
+  private val xi = 1400
+  private val yi = 1000
 
 
   val width = 0 until xi toArray
@@ -84,14 +84,15 @@ object App{
 
   }
 
-  private def trace(eye: Vector3D, objs: Set[Object3D], intersectedObjs: Array[RayIntersection], depth: Int, nearestObj: RayIntersection, isNoIntersect: Boolean, curMaterial: MaterialEta = MaterialEta.AIR): Color = {
+  private def trace(eye: Vector3D, objs: Set[Object3D], intersectedObjs: Array[RayIntersection], depth: Int, renderObj: RayIntersection,
+                    isNoIntersect: Boolean, curMaterial: MaterialEta = MaterialEta.AIR): Color = {
     if (depth == 0 || isNoIntersect) {
       return Color.GRAY
     }
 
-    val otherObjs = objs diff Set(nearestObj.obj)
+    val otherObjs = objs diff Set(renderObj.obj)
 
-    val phit: Vector3D = eye add (nearestObj.originDir scalarMultiply nearestObj.distance)
+    val phit: Vector3D = eye add (renderObj.originDir scalarMultiply renderObj.distance)
     val phitToLight = light.center subtract phit
     val maxDistance = light.center.distance(phit)
     val phitToLightDir: Vector3D = phitToLight normalize()
@@ -100,14 +101,50 @@ object App{
       r._1 == false || r._2 > maxDistance
     }
 
-    
+    val intersections2nd = Ray.intersect(phit, phitToLight normalize, objs, renderObj.obj).filter(x => x.distance < maxDistance)
 
-    val c = otherObjs.size - notIntersectedObjs.size match {
-      case 0 =>
-        trace$(eye, objs, depth, nearestObj, phit, .4, .6, curMaterial)
-      case _ =>
+    //    val cao = for {
+    //      is <- intersections2nd
+    //      o = is.obj
+    //      if o.surface == Surface.REFRACTIVE
+    //    } yield {
+    //
+    //    }
+
+
+    val c = intersections2nd.isEmpty match {
+      case true =>
+        trace$(eye, objs, depth, renderObj, phit, .4, .6, curMaterial)
+      case false =>
         // in shadow
-        trace$(eye, objs, depth, nearestObj, phit, .01, .01, curMaterial)
+        //val glass = intersections2nd.filter(x => x.obj.surface == Surface.REFRACTIVE)
+        //        println(s"cainima ${intersections2nd.size} $intersections2nd")
+        val nobj = seekNearestObj(intersections2nd.toArray)
+        //        println(s"cainima end")
+
+
+        nobj.obj.surface match {
+          case Surface.REFRACTIVE =>
+            //            //            println("fuck")
+            val phit1 = phit subtract (nobj.originDir scalarMultiply 16)
+            //            //Color.BLACK
+            //            val c = trace$(phit1, objs, depth, nobj, phit, .01, .01, curMaterial)
+            //            println(c)
+            //            c
+
+            val shabima = phit add (nobj.originDir scalarMultiply nobj.distance)
+
+            import ray.common.Utils._
+            val col1: Vector3D = computeRefraction(phit1, objs, depth, nobj, shabima, nobj.obj.normal(phit))
+            val col2: Vector3D = trace$(eye, objs, depth, renderObj, phit, .01, .01, curMaterial)
+            val cc: Color = col1 scalarMultiply .3 add col2
+            cc
+
+          //trace$(phit1, objs, depth, nobj, phit, .6, .5, curMaterial)
+          case _ => trace$(eye, objs, depth, renderObj, phit, .01, .01, curMaterial)
+        }
+
+
     }
 
     c
@@ -166,11 +203,11 @@ object App{
     import ray.common.Utils._
     val reflect = nearestIntersection.originDir.subtract(n scalarMultiply (2 * (n dotProduct nearestIntersection.originDir)))
 
-    val rayIntersections = Ray.intersect(phit, reflect, objs, nearestIntersection.obj)
+    val reflectIs = Ray.intersect(phit, reflect, objs, nearestIntersection.obj)
 
-    val ris = rayIntersections.toArray
+    val ris = reflectIs.toArray
     val nobj = seekNearestObj(ris)
-    trace(phit, objs, ris, depth - 1, nobj, rayIntersections.isEmpty, MaterialEta.AIR) scalarMultiply .75
+    trace(phit, objs, ris, depth - 1, nobj, reflectIs.isEmpty, MaterialEta.AIR) scalarMultiply .75
   }
 
   private def computeRefraction(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: RayIntersection,
