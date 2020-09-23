@@ -9,11 +9,11 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.algo.Phong
 import ray.common.Material.Material
 import ray.common.{Material, Object3D, Surface}
-import ray.scenes.PlaneTest
+import ray.scenes.LightDraw
 
 
 object App{
-  val scene = PlaneTest
+  val scene = LightDraw
   private val xi = 1900
   private val yi = 1500
 

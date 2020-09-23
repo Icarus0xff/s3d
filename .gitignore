@@ -5,3 +5,4 @@
 /target/
 *.bmp
 .DS_Store
+bin/development.sh
