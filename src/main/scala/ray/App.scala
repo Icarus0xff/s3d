@@ -169,7 +169,7 @@ object App{
       if intersection._1
     } yield IntersectStatus(reflect, intersection._2, obj)
 
-    trace(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .85
+    trace(phit, objs, intersectStatuses.toArray, depth - 1) scalarMultiply .75
   }
 
   private def computeRefraction(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: IntersectStatus,

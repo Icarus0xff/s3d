@@ -8,7 +8,7 @@ Scala implemented ray tracer.
 
 ```bash
 # compile
- mvn clean package -U
+mvn clean package -U
  
 # run 
 java -cp target/s3d-1.0-SNAPSHOT.jar ray.App
