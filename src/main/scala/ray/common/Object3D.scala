@@ -1,7 +1,7 @@
 package ray.common
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
-import ray.common.Material.Material
+import ray.common.MaterialEta.MaterialEta
 import ray.common.Surface.Surface
 
 
@@ -15,7 +15,7 @@ object Surface extends Enumeration{
 trait Object3D{
   val color: Vector3D
   val surface: Surface
-  val material: Material
+  val materialEta: MaterialEta
 
   def normal(p: Vector3D): Vector3D
 

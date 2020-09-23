@@ -1,8 +1,8 @@
 package ray.common
 
-object Material extends Enumeration{
+object MaterialEta extends Enumeration{
 
-  type Material = Val
+  type MaterialEta = Val
 
   protected case class Val(eta: Double) extends super.Val
 

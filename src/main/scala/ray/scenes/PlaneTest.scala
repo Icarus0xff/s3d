@@ -9,7 +9,7 @@ object PlaneTest{
   val smallSphere = Sphere(new Vector3D(700, 600, 1400f), 300f, new Vector3D(.1, .5, .5))
 
   val sphereRefraction = Sphere(new Vector3D(1000, 850, 500f), 256f, new Vector3D(.5, .5, .5), surface = Surface.REFRACTIVE,
-    material = Material.GLASS)
+    materialEta = MaterialEta.GLASS)
   val sphere1 = Sphere(new Vector3D(1600, 100, 1000f), 200f, new Vector3D(.2, .3, .2))
   val light = Sphere(new Vector3D(900, 100, 1000f), 80, new Vector3D(.25, .45, .07))
 
