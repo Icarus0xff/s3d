@@ -8,8 +8,10 @@ import ray.common.Surface.Surface
 import ray.common.Utils._
 
 
-case class Sphere(center: Vector3D, radius: Double, color: Vector3D, surface: Surface = Surface.REGULAR, materialEta: MaterialEta = MaterialEta.AIR) extends Object3D{
+case class Sphere(center: Vector3D, radius: Double, color: Vector3D, surface: Surface = Surface.REGULAR, materialEta: MaterialEta = MaterialEta.AIR)
+  extends Object3D{
 
+  private val sphere = new com.badlogic.gdx.math.collision.Sphere(center, radius.toFloat)
   val radius2: Double = radius * radius
 
 
@@ -23,6 +25,10 @@ case class Sphere(center: Vector3D, radius: Double, color: Vector3D, surface: Su
 
   override def normal(p: Vector3D): Vector3D = {
     (p subtract center).normalize()
+  }
+
+  override def surfaceArea(): Double = {
+    sphere.surfaceArea()
   }
 
 }

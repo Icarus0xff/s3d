@@ -47,6 +47,8 @@ case class Triangle(A: Vector3D, B: Vector3D, C: Vector3D, color: Vector3D, surf
   }
 
   override def normal(p: Vector3D): Vector3D = new Vector3D(n.getX, n.getY, n.getZ) normalize()
+
+  override def surfaceArea(): Double = ???
 }
 
 

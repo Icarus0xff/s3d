@@ -59,7 +59,7 @@ object PathTracing{
         yy = pix._2 + r
         randomDir: Vector3D = (new Vector3D(xx, yy, 0) subtract eye).normalize()
         rayIntersections: Array[RayIntersection] = Ray.rayIntersections(eye, randomDir, scene.sceneObjs)
-        ri <- rayIntersections
+        ri = Ray.seekNearestObj(rayIntersections)
       } yield {
 
         val color: Vector3D = ri.obj.color scalarMultiply 80 scalarMultiply (1f / MAX)
