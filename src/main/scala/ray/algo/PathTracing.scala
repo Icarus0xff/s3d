@@ -46,13 +46,14 @@ object PathTracing{
     }
 
     import ray.common.Utils._
+    val MAX = 2
+
     val randomRays = for {
       pix <- pixs
-
-
     } yield {
+
       val zz = for {
-        _ <- 1 to 2
+        _ <- 1 to MAX
         r = Random.nextDouble()
         xx = pix._1 + r
         yy = pix._2 + r
@@ -61,16 +62,21 @@ object PathTracing{
         ri <- rayIntersections
       } yield {
 
-        val color: Vector3D = Phong.renderPix(eye, randomDir, ri.distance, light, ri.obj, .5, .5, ri.obj.color)
+        val color: Vector3D = ri.obj.color scalarMultiply 80 scalarMultiply (1f / MAX)
 
-        color.scalarMultiply(1 / 2)
+        color
       }
+
 
       val cc: Color = zz.reduce { (l, r) => l add r }
 
-      (pix._1, pix._2, cc)
 
+      val rr = (pix._1, pix._2, cc)
+
+
+      rr
     }
+
 
     randomRays.foreach {
       pix =>

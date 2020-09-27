@@ -72,7 +72,7 @@ object RayTracing{
       }
 
       )
-      (rayIntersection._1._1, rayIntersection._1._2, trace(eye, objs, rayIntersections, 8, seekNearestObj(rayIntersections), rayIntersections.size == 0, MaterialEta.AIR))
+      (rayIntersection._1._1, rayIntersection._1._2, trace(eye, objs, rayIntersections, 8, Ray.seekNearestObj(rayIntersections), rayIntersections.size == 0, MaterialEta.AIR))
     }
 
     pixColor toArray
@@ -163,7 +163,7 @@ object RayTracing{
     val rayIntersections = Ray.intersect(phit, reflect, objs, nearestIntersection.obj)
 
     val ris = rayIntersections.toArray
-    val nobj = seekNearestObj(ris)
+    val nobj = Ray.seekNearestObj(ris)
     trace(phit, objs, ris, depth - 1, nobj, rayIntersections.isEmpty, MaterialEta.AIR) scalarMultiply .75
   }
 
@@ -187,7 +187,7 @@ object RayTracing{
 
 
     val iobjs = rayIntersections.toArray
-    trace(phit, objs, iobjs, depth - 1, seekNearestObj(iobjs), rayIntersections.isEmpty, nearestIntersection.obj.materialEta)
+    trace(phit, objs, iobjs, depth - 1, Ray.seekNearestObj(iobjs), rayIntersections.isEmpty, nearestIntersection.obj.materialEta)
   }
 
   private def refractionDir(eyeToPhit: Vector3D, n: Vector3D, eta1: Double, eta2: Double): Vector3D = {
@@ -208,17 +208,6 @@ object RayTracing{
         (MaterialEta.GLASS.eta, MaterialEta.AIR.eta)
     }
     (eta1, eta2)
-  }
-
-  private def seekNearestObj(intersectedObjs: Array[RayIntersection]) = {
-    intersectedObjs.reduce {
-      (a, b) =>
-        if (a.distance < b.distance) {
-          a
-        } else {
-          b
-        }
-    }
   }
 
   private def rayIntersections(pixs: Array[(Int, Int)], eye: Vector3D, objs: Set[Object3D]) = {

@@ -26,4 +26,15 @@ object Ray{
 
     r.toArray
   }
+
+  def seekNearestObj(intersectedObjs: Array[RayIntersection]) = {
+    intersectedObjs.reduce {
+      (a, b) =>
+        if (a.distance < b.distance) {
+          a
+        } else {
+          b
+        }
+    }
+  }
 }
