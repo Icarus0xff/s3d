@@ -1,58 +1,15 @@
 package ray.algo
 
 import java.awt.Color
-import java.awt.image.BufferedImage
-import java.io.File
 
-import javax.imageio.ImageIO
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
-import ray.common.MaterialEta.MaterialEta
 import ray.common.Ray.RayIntersection
 import ray.common.{MaterialEta, Object3D, Ray, Surface}
-import ray.scenes.LightDraw
 
 
-object RayTracing{
-  val scene = LightDraw
-  private val xi = 1900
-  private val yi = 1500
-
-
-  val width = 0 until xi toArray
-  val height = 0 until yi toArray
-
-
-  val eye = new Vector3D(xi / 2, yi / 2, -700f)
-  val light = scene.light
-
-
-  def outputRenderedPic = {
-    val pixs = for {
-      x <- width
-      y <- height
-    } yield {
-      (x, y)
-    }
-
-
-    val newBufferedImage = new BufferedImage(width.size, height.size, BufferedImage.TYPE_INT_RGB)
-
-    for {
-      x <- 0 until xi
-      y <- 0 until yi
-    } yield {
-      newBufferedImage.setRGB(x, y, Color.GRAY.getRGB)
-    }
-
-    renderScene(pixs, eye, scene.sceneObjs).foreach {
-      pix =>
-        newBufferedImage.setRGB(pix._1, pix._2, pix._3.getRGB)
-    }
-
-
-    val file = new File("pic.png")
-    ImageIO.write(newBufferedImage, "PNG", file)
-  }
+object BSDFUtils{
+  //  val scene = LightDraw
+  //  val light = scene.light
 
   implicit def pixIntersectedObjToIntersectInfo(s: PixIntersectedObj): RayIntersection = {
     RayIntersection(s.dir, s.d, s.obj)
@@ -72,56 +29,42 @@ object RayTracing{
       }
 
       )
-      (rayIntersection._1._1, rayIntersection._1._2, trace(eye, objs, rayIntersections, 8, Ray.seekNearestObj(rayIntersections), rayIntersections.size == 0, MaterialEta.AIR))
+      (rayIntersection._1._1, rayIntersection._1._2, trace(eye, objs, rayIntersections, 8, Ray.seekNearestObj(rayIntersections), rayIntersections.size == 0))
     }
 
     pixColor toArray
 
   }
 
-  private def trace(eye: Vector3D, objs: Set[Object3D], intersectedObjs: Array[RayIntersection], depth: Int, nearestObj: RayIntersection, isNoIntersect: Boolean, curMaterial: MaterialEta = MaterialEta.AIR): Color = {
+  import ray.common.Utils._
+
+  def trace(o: Vector3D, objs: Set[Object3D], intersectedObjs: Array[RayIntersection], depth: Int,
+            nearestObj: RayIntersection, isNoIntersect: Boolean): Color = {
     if (depth == 0 || isNoIntersect) {
-      return Color.GRAY
+      return new Vector3D(0, 128, 0)
     }
 
-    val otherObjs = objs diff Set(nearestObj.obj)
+    val phit = o add (nearestObj.originDir scalarMultiply nearestObj.distance)
 
-    val phit: Vector3D = eye add (nearestObj.originDir scalarMultiply nearestObj.distance)
-    val phitToLight = light.center subtract phit
-    val maxDistance = light.center.distance(phit)
-    val phitToLightDir: Vector3D = phitToLight normalize()
-    val notIntersectedObjs = otherObjs.takeWhile { object3D =>
-      val r = object3D.intersect(phit, phitToLightDir)
-      r._1 == false || r._2 > maxDistance
-    }
-
-
-    val c = otherObjs.size - notIntersectedObjs.size match {
-      case 0 =>
-        trace$(eye, objs, depth, nearestObj, phit, .4, .6, curMaterial)
-      case _ =>
-        // in shadow
-        trace$(eye, objs, depth, nearestObj, phit, .01, .01, curMaterial)
-    }
-
-    c
+    trace$(o, objs, depth, nearestObj, phit, .4, .6)
   }
 
-  private def trace$(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: RayIntersection, phit: Vector3D,
-                     amb: Double, spec: Double, curMaterial: MaterialEta = MaterialEta.AIR): Color = {
+  private def trace$(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: RayIntersection,
+                     phit: Vector3D, amb: Double, spec: Double): Color = {
     lazy val hitNorm = nearestIntersection.obj.normal(phit)
 
     nearestIntersection.obj.surface match {
       case Surface.REFLECTIVE =>
         computeReflection(objs, depth, nearestIntersection, phit, hitNorm)
-      case Surface.REGULAR => Phong.renderPix(eye, nearestIntersection.originDir, nearestIntersection.distance,
-        light, nearestIntersection.obj, amb, spec, nearestIntersection.obj.color)
+      case Surface.REGULAR => Color.BLUE
       case Surface.REFRACTIVE =>
         import ray.common.Utils._
-
         val refl: Vector3D = computeReflection(objs, depth, nearestIntersection, phit, hitNorm)
 
+
         val viewDir = (phit subtract eye) normalize
+
+
         val (eta1: Double, eta2: Double) = computeEtaPair(viewDir, hitNorm)
 
         val rdir = refractionDir(phit subtract eye, hitNorm, eta1, eta2)
@@ -164,7 +107,7 @@ object RayTracing{
 
     val ris = rayIntersections.toArray
     val nobj = Ray.seekNearestObj(ris)
-    trace(phit, objs, ris, depth - 1, nobj, rayIntersections.isEmpty, MaterialEta.AIR) scalarMultiply .75
+    trace(phit, objs, ris, depth - 1, nobj, rayIntersections.isEmpty) scalarMultiply .75
   }
 
   private def computeRefraction(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: RayIntersection,
@@ -187,7 +130,7 @@ object RayTracing{
 
 
     val iobjs = rayIntersections.toArray
-    trace(phit, objs, iobjs, depth - 1, Ray.seekNearestObj(iobjs), rayIntersections.isEmpty, nearestIntersection.obj.materialEta)
+    trace(phit, objs, iobjs, depth - 1, Ray.seekNearestObj(iobjs), rayIntersections.isEmpty)
   }
 
   private def refractionDir(eyeToPhit: Vector3D, n: Vector3D, eta1: Double, eta2: Double): Vector3D = {

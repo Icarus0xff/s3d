@@ -12,7 +12,7 @@ object LightDraw{
     materialEta = MaterialEta.GLASS)
 
 
-  val light = Sphere(new Vector3D(900, 100, 1000f), 80, new Vector3D(.25, .45, .07))
+  val light = Sphere(new Vector3D(900, 100, 1000f), 80, new Vector3D(1, 1, 1))
 
 
   val planeLeft = MyPlane(plane = new Plane(new Vector3D(1, 0, 0), new Vector3D(0, -800, 0)), color = new Vector3D(.5, .5, .5))

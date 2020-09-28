@@ -23,4 +23,6 @@ trait Object3D{
 
   def surfaceArea(): Double
 
+  def uniformSample(): Vector3D
+
 }

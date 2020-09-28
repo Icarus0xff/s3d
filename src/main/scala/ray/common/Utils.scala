@@ -17,4 +17,12 @@ object Utils{
   implicit def vector3ToVector3D(s: Vector3): Vector3D = new Vector3D(s.x, s.y, s.z)
 
 
+  def multi(a: Vector3D, b: Vector3D): Vector3D = {
+    new Vector3D(
+      a.getX * b.getX,
+      a.getY * b.getY,
+      a.getZ * b.getZ,
+    )
+  }
+
 }

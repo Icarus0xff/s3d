@@ -25,4 +25,6 @@ case class MyPlane(plane: Plane, color: Vector3D, surface: Surface = Surface.REG
 
   override def surfaceArea(): Double = ???
 
+  override def uniformSample(): Vector3D = ???
+
 }
