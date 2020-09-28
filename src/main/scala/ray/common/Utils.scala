@@ -1,9 +1,13 @@
 package ray.common
 
 import java.awt.Color
+import java.awt.image.BufferedImage
+import java.io.File
 
 import com.badlogic.gdx.math.Vector3
+import javax.imageio.ImageIO
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
+
 
 object Utils{
 
@@ -25,4 +29,20 @@ object Utils{
     )
   }
 
+  def outputImage(width: Int, height: Int, pixColor: Array[(Int, Int, Int)]): Boolean = {
+    val newBufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+    for {
+      x <- 0 until width
+      y <- 0 until height
+    } yield {
+      newBufferedImage.setRGB(x, y, Color.GRAY.getRGB)
+    }
+    pixColor.foreach {
+      pix => newBufferedImage.setRGB(pix._1, pix._2, pix._3)
+    }
+
+
+    val file = new File("pic.png")
+    ImageIO.write(newBufferedImage, "PNG", file)
+  }
 }
