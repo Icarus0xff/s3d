@@ -7,6 +7,7 @@ import java.io.File
 import com.badlogic.gdx.math.Vector3
 import javax.imageio.ImageIO
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
+import org.apache.commons.math3.util.FastMath
 
 
 object Utils{
@@ -44,5 +45,13 @@ object Utils{
 
     val file = new File("pic.png")
     ImageIO.write(newBufferedImage, "PNG", file)
+  }
+
+  def unifromSampleHemisphere(u: Double, v: Double): Vector3D = {
+    val z = u
+    val r = FastMath.sqrt(FastMath.max(0f, 1f - z * z));
+    val phi = 2 * FastMath.PI * v;
+    new Vector3D(r * FastMath.cos(phi), r * FastMath.sin(phi), z);
+
   }
 }

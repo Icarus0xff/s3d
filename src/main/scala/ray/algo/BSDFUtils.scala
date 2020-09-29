@@ -3,45 +3,40 @@ package ray.algo
 import java.awt.Color
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
-import ray.common.Ray.RayIntersection
-import ray.common.{MaterialEta, Object3D, Ray, Surface}
+import ray.common.MyRay.RayIntersection
+import ray.common.{MaterialEta, MyRay, Object3D, Surface}
 
 
 object BSDFUtils{
-  //  val scene = LightDraw
-  //  val light = scene.light
 
   implicit def pixIntersectedObjToIntersectInfo(s: PixIntersectedObj): RayIntersection = {
     RayIntersection(s.dir, s.d, s.obj)
   }
 
-  private def renderScene(pixs: Array[(Int, Int)], eye: Vector3D, objs: Set[Object3D]): Array[(Int, Int, Color)] = {
-
-    val pixToEyePathAllIntersectedObjs = rayIntersections(pixs, eye, objs)
-      .groupBy(x => x.pix)
-
-    val pixColor = for {
-      rayIntersection <- pixToEyePathAllIntersectedObjs
-    } yield {
-      val rayIntersections = rayIntersection._2.map(x => {
-        val r: RayIntersection = x
-        r
-      }
-
-      )
-      (rayIntersection._1._1, rayIntersection._1._2, trace(eye, objs, rayIntersections, 8, Ray.seekNearestObj(rayIntersections), rayIntersections.size == 0))
+  def traceRay(o: Vector3D, dir: Vector3D, objs: Set[Object3D]): Color = {
+    val oobbjjs = allCollision(o, dir, objs)
+    if (oobbjjs.size == 0) {
+      Color.GRAY
     }
 
-    pixColor toArray
-
+    val array = oobbjjs.toArray
+    trace(o, objs, array, 8, MyRay.seekNearestObj(array))
   }
 
-  import ray.common.Utils._
 
-  def trace(o: Vector3D, objs: Set[Object3D], intersectedObjs: Array[RayIntersection], depth: Int,
-            nearestObj: RayIntersection, isNoIntersect: Boolean): Color = {
-    if (depth == 0 || isNoIntersect) {
-      return new Vector3D(0, 128, 0)
+  def allCollision(o: Vector3D, dir: Vector3D, objs: Set[Object3D]) = {
+    for {
+      obj <- objs
+      intersection = obj.intersect(o, dir)
+      if intersection._1
+    } yield {
+      RayIntersection(dir, intersection._2, obj)
+    }
+  }
+
+  def trace(o: Vector3D, objs: Set[Object3D], intersectedObjs: Array[RayIntersection], depth: Int, nearestObj: RayIntersection): Color = {
+    if (depth == 0) {
+      return Color.GRAY
     }
 
     val phit = o add (nearestObj.originDir scalarMultiply nearestObj.distance)
@@ -103,11 +98,11 @@ object BSDFUtils{
     import ray.common.Utils._
     val reflect = nearestIntersection.originDir.subtract(n scalarMultiply (2 * (n dotProduct nearestIntersection.originDir)))
 
-    val rayIntersections = Ray.intersect(phit, reflect, objs, Set(nearestIntersection.obj))
+    val rayIntersections = MyRay.intersect(phit, reflect, objs, Set(nearestIntersection.obj))
 
     val ris = rayIntersections.toArray
-    val nobj = Ray.seekNearestObj(ris)
-    trace(phit, objs, ris, depth - 1, nobj, rayIntersections.isEmpty) scalarMultiply .75
+    val nobj = MyRay.seekNearestObj(ris)
+    trace(phit, objs, ris, depth - 1, nobj) scalarMultiply .75
   }
 
   private def computeRefraction(eye: Vector3D, objs: Set[Object3D], depth: Int, nearestIntersection: RayIntersection,
@@ -130,7 +125,7 @@ object BSDFUtils{
 
 
     val iobjs = rayIntersections.toArray
-    trace(phit, objs, iobjs, depth - 1, Ray.seekNearestObj(iobjs), rayIntersections.isEmpty)
+    trace(phit, objs, iobjs, depth - 1, MyRay.seekNearestObj(iobjs))
   }
 
   private def refractionDir(eyeToPhit: Vector3D, n: Vector3D, eta1: Double, eta2: Double): Vector3D = {
@@ -151,18 +146,6 @@ object BSDFUtils{
         (MaterialEta.GLASS.eta, MaterialEta.AIR.eta)
     }
     (eta1, eta2)
-  }
-
-  private def rayIntersections(pixs: Array[(Int, Int)], eye: Vector3D, objs: Set[Object3D]) = {
-    for {
-      pix <- pixs
-      obj <- objs
-
-      eyeToPix = computeRay(eye, pix)
-      intersection = obj.intersect(eye, eyeToPix)
-
-      if intersection._1
-    } yield PixIntersectedObj(pix, eyeToPix, intersection._2, obj)
   }
 
   private def computeRay(eye: Vector3D, xy: (Int, Int)) = {

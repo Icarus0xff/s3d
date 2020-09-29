@@ -15,7 +15,7 @@ object AppSpark{
   val yi = 0 until height toArray
 
   val eye = new Vector3D(width / 2, height / 2, -700f)
-  val MAX_RANDOM_RAY = 16
+  val MAX_RANDOM_RAY = 128
 
   def main(args: Array[String]): Unit = {
     val pixs = for {
@@ -35,10 +35,13 @@ object AppSpark{
     val df = spark.createDataFrame(pixs).toDF("x", "y").repartition(20)
       .withColumn("color", renderUDF($"x", $"y"))
 
-    println(df.count)
+    df.persist()
+    //    println(df.first)
+
     val colors = df.collect().map {
       x => (x.getInt(0), x.getInt(1), x.getInt(2))
     }
+    df.unpersist()
 
 
     Utils.outputImage(width, height, colors)

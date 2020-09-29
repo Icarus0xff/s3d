@@ -8,15 +8,15 @@ import ray.common._
 object LightDraw{
 
 
-  val sphereRefraction = Sphere(new Vector3D(1000, 850, 900f), 256f, new Vector3D(.5, .5, .5), surface = Surface.REFRACTIVE,
+  val sphereRefraction = Sphere(new Vector3D(1000, 850, 900f), 256f, new Vector3D(.5, .5, 0), surface = Surface.REFRACTIVE,
     materialEta = MaterialEta.GLASS)
 
 
-  val light = Sphere(new Vector3D(900, 100, 1000f), 80, new Vector3D(1, 1, 1))
+  val light = Sphere(new Vector3D(1000, 0, 1000f), 100, new Vector3D(1, 1, 1))
 
 
   val planeLeft = MyPlane(plane = new Plane(new Vector3D(1, 0, 0), new Vector3D(0, -800, 0)), color = new Vector3D(.5, .5, .5))
-  val planeRight = MyPlane(plane = new Plane(new Vector3D(-1, 0, 0), new Vector3D(2400, 0, 0)), color = new Vector3D(.5, .5, .5))
+  val planeRight = MyPlane(plane = new Plane(new Vector3D(-1, 0, 0), new Vector3D(2400, 0, 0)), color = new Vector3D(0, .5, 0))
   val planeCeil = MyPlane(plane = new Plane(new Vector3D(0, 1, 0), new Vector3D(0, -800, 0)), color = new Vector3D(.5, .5, .5))
 
   val triangle = Triangle(

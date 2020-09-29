@@ -3,7 +3,7 @@ package ray.common
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.AppSpark.eye
 
-object Ray{
+object MyRay{
   def intersect(o: Vector3D, dir: Vector3D, objs: Set[Object3D],
                 diffObj: Set[Object3D] = Set.empty) = for {
     obj <- objs diff diffObj

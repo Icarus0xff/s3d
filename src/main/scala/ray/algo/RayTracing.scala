@@ -7,8 +7,8 @@ import java.io.File
 import javax.imageio.ImageIO
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.common.MaterialEta.MaterialEta
-import ray.common.Ray.RayIntersection
-import ray.common.{MaterialEta, Object3D, Ray, Surface}
+import ray.common.MyRay.RayIntersection
+import ray.common.{MaterialEta, Object3D, MyRay, Surface}
 import ray.scenes.LightDraw
 
 
@@ -72,7 +72,7 @@ object RayTracing{
       }
 
       )
-      (rayIntersection._1._1, rayIntersection._1._2, trace(eye, objs, rayIntersections, 8, Ray.seekNearestObj(rayIntersections), rayIntersections.size == 0, MaterialEta.AIR))
+      (rayIntersection._1._1, rayIntersection._1._2, trace(eye, objs, rayIntersections, 8, MyRay.seekNearestObj(rayIntersections), rayIntersections.size == 0, MaterialEta.AIR))
     }
 
     pixColor toArray
@@ -160,10 +160,10 @@ object RayTracing{
     import ray.common.Utils._
     val reflect = nearestIntersection.originDir.subtract(n scalarMultiply (2 * (n dotProduct nearestIntersection.originDir)))
 
-    val rayIntersections = Ray.intersect(phit, reflect, objs, Set(nearestIntersection.obj))
+    val rayIntersections = MyRay.intersect(phit, reflect, objs, Set(nearestIntersection.obj))
 
     val ris = rayIntersections.toArray
-    val nobj = Ray.seekNearestObj(ris)
+    val nobj = MyRay.seekNearestObj(ris)
     trace(phit, objs, ris, depth - 1, nobj, rayIntersections.isEmpty, MaterialEta.AIR) scalarMultiply .75
   }
 
@@ -187,7 +187,7 @@ object RayTracing{
 
 
     val iobjs = rayIntersections.toArray
-    trace(phit, objs, iobjs, depth - 1, Ray.seekNearestObj(iobjs), rayIntersections.isEmpty, nearestIntersection.obj.materialEta)
+    trace(phit, objs, iobjs, depth - 1, MyRay.seekNearestObj(iobjs), rayIntersections.isEmpty, nearestIntersection.obj.materialEta)
   }
 
   private def refractionDir(eyeToPhit: Vector3D, n: Vector3D, eta1: Double, eta2: Double): Vector3D = {
