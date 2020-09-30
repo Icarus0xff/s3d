@@ -13,7 +13,16 @@ import org.apache.commons.math3.util.FastMath
 object Utils{
 
 
-  implicit def vector3DToColor(s: Vector3D): Color = new Color(s.getX toInt, s.getY toInt, s.getZ toInt)
+  implicit def vector3DToColor(s: Vector3D): Color = {
+    val t = Seq(s.getX toInt, s.getY toInt, s.getZ toInt).map(x => {
+      if (x > 255) {
+        255
+      } else {
+        x
+      }
+    })
+    new Color(t(0), t(1), t(2))
+  }
 
   implicit def colorToVector3D(s: Color): Vector3D = new Vector3D(s.getRed, s.getGreen, s.getBlue)
 
@@ -48,10 +57,21 @@ object Utils{
   }
 
   def unifromSampleHemisphere(u: Double, v: Double): Vector3D = {
-    val z = u
-    val r = FastMath.sqrt(FastMath.max(0f, 1f - z * z));
+    val sinTheta = FastMath.sqrt(-u * (u - 2));
+    val theta = FastMath.asin(sinTheta)
     val phi = 2 * FastMath.PI * v;
-    new Vector3D(r * FastMath.cos(phi), r * FastMath.sin(phi), z);
+    new Vector3D(sinTheta * FastMath.cos(phi), sinTheta * FastMath.sin(phi), u)
+
+    //    val theta = FastMath.acos(FastMath.pow(1 - u, 1 / 2))
+    //    val phi = 2 * FastMath.PI * v
+    //
+    //
+    //    val x = FastMath.sin(theta) * FastMath.cos(phi)
+    //    val y = FastMath.sin(theta) * FastMath.sin(phi)
+    //    val z = FastMath.cos(theta)
+    //
+    //    new Vector3D(x, y, z)
+
 
   }
 }

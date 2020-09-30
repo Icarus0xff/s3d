@@ -137,7 +137,7 @@ object BSDFUtils{
     refractDir
   }
 
-  private def computeEtaPair(hitDir: Vector3D, norm: Vector3D) = {
+  def computeEtaPair(hitDir: Vector3D, norm: Vector3D) = {
     val (eta1, eta2) = hitDir dotProduct norm match {
       case v if v >= 0 && v <= 1 =>
         //inside object

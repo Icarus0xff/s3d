@@ -10,7 +10,7 @@ object App{
 
   val xi = 0 until width toArray
   val yi = 0 until height toArray
-  val MAX_RANDOM_RAY = 16
+  val MAX_RANDOM_RAY = 128
 
 
   def main(args: Array[String]): Unit = {

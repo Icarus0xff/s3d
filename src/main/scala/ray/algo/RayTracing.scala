@@ -8,7 +8,7 @@ import javax.imageio.ImageIO
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import ray.common.MaterialEta.MaterialEta
 import ray.common.MyRay.RayIntersection
-import ray.common.{MaterialEta, Object3D, MyRay, Surface}
+import ray.common.{MaterialEta, MyRay, Object3D, Surface}
 import ray.scenes.LightDraw
 
 
@@ -122,7 +122,7 @@ object RayTracing{
         val refl: Vector3D = computeReflection(objs, depth, nearestIntersection, phit, hitNorm)
 
         val viewDir = (phit subtract eye) normalize
-        val (eta1: Double, eta2: Double) = computeEtaPair(viewDir, hitNorm)
+        val (eta1: Double, eta2: Double) = BSDFUtils.computeEtaPair(viewDir, hitNorm)
 
         val rdir = refractionDir(phit subtract eye, hitNorm, eta1, eta2)
 
@@ -172,7 +172,7 @@ object RayTracing{
     val eyeToPhit = phit subtract eye
     val viewDir = eyeToPhit.normalize()
 
-    val (eta1: Double, eta2: Double) = computeEtaPair(viewDir, nearestIntersection.obj.normal(phit))
+    val (eta1: Double, eta2: Double) = BSDFUtils.computeEtaPair(viewDir, nearestIntersection.obj.normal(phit))
 
     val refractDir = refractionDir(eyeToPhit, n, eta1, eta2)
 
@@ -199,16 +199,6 @@ object RayTracing{
     refractDir
   }
 
-  private def computeEtaPair(hitDir: Vector3D, norm: Vector3D) = {
-    val (eta1, eta2) = hitDir dotProduct norm match {
-      case v if v >= 0 && v <= 1 =>
-        //inside object
-        (MaterialEta.AIR.eta, MaterialEta.GLASS.eta)
-      case _ =>
-        (MaterialEta.GLASS.eta, MaterialEta.AIR.eta)
-    }
-    (eta1, eta2)
-  }
 
   private def rayIntersections(pixs: Array[(Int, Int)], eye: Vector3D, objs: Set[Object3D]) = {
     for {

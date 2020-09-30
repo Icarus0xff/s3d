@@ -37,8 +37,8 @@ case class Sphere(center: Vector3D, radius: Double, color: Vector3D, surface: Su
   }
 
 
-  val r1 = new Random(42)
-  val r2 = new Random(43)
+  val r1 = new Random(System.nanoTime())
+  val r2 = new Random(System.nanoTime() / 42)
 
   @tailrec
   private def random(): Vector3D = {

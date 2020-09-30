@@ -7,15 +7,15 @@ import ray.common.Utils
 
 object AppSpark{
 
-  private val width = 1700
-  private val height = 1500
+  private val width = 1500
+  private val height = 1300
 
 
   val xi = 0 until width toArray
   val yi = 0 until height toArray
 
   val eye = new Vector3D(width / 2, height / 2, -700f)
-  val MAX_RANDOM_RAY = 128
+  val MAX_RANDOM_RAY = 512
 
   def main(args: Array[String]): Unit = {
     val pixs = for {
@@ -26,13 +26,14 @@ object AppSpark{
     }
 
     val spark = SparkSession.builder()
-      .config("spark.master", "local[*]")
+      //      .config("spark.master", "local[*]")
       .getOrCreate()
+
     import org.apache.spark.sql.functions.udf
     import spark.implicits._
     val renderUDF = udf(PathTracing.renderPix(_, _, MAX_RANDOM_RAY, width, height))
 
-    val df = spark.createDataFrame(pixs).toDF("x", "y").repartition(20)
+    val df = spark.createDataFrame(pixs).toDF("x", "y").repartition(8000)
       .withColumn("color", renderUDF($"x", $"y"))
 
     df.persist()

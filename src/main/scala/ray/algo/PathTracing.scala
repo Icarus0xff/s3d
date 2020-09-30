@@ -1,17 +1,24 @@
 package ray.algo
 
+import java.awt.Color
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import org.apache.commons.math3.util.FastMath
+import org.apache.log4j.{LogManager, Logger}
 import ray.common.MyRay.RayIntersection
 import ray.common._
 import ray.scenes.LightDraw
 
-import scala.util.Random
+
 
 
 object PathTracing{
   val scene = LightDraw
   val light = scene.light
+  val rn = new scala.util.Random(System.nanoTime())
+  val rn1 = new scala.util.Random(System.nanoTime() - 1997)
+
+  lazy val logger: Logger = LogManager.getLogger(getClass.getName.stripSuffix("$"))
 
 
   def renderPix(xi: Int, yi: Int, maxRandomRay: Int, width: Int, height: Int): Int = {
@@ -19,7 +26,7 @@ object PathTracing{
 
     val colorPartial = for {
       _ <- 1 to maxRandomRay
-      r = Random.nextDouble()
+      r = rn.nextDouble()
       xx = xi + r
       yy = yi + r
       randomDir: Vector3D = (new Vector3D(xx, yy, 0) subtract eye) normalize()
@@ -28,7 +35,9 @@ object PathTracing{
     } yield {
       val phit = eye add (randomDir scalarMultiply ri.distance)
 
-      shade(ri, phit, randomDir) scalarMultiply (1f / maxRandomRay)
+      val c = shade(ri, phit, 4) scalarMultiply (1f / maxRandomRay)
+      logger.info(c)
+      c
     }
 
     import Utils._
@@ -37,68 +46,99 @@ object PathTracing{
     color.getRGB
   }
 
-  private def shade(ri: RayIntersection, phit: Vector3D, dir: Vector3D): Vector3D = {
+  import ray.common.Utils._
 
-    val uniformPointOnLight = light.uniformSample()
-    val tdir = (phit subtract uniformPointOnLight) normalize
-    val bias = tdir scalarMultiply 16
-    val aPoint = uniformPointOnLight add bias
-    val rayIntersections: Array[RayIntersection] = MyRay.intersect(aPoint, tdir, Set(ri.obj)).toArray
+  private def shade(ri: RayIntersection, phit: Vector3D, depth: Int): Vector3D = {
+    lazy val dirLight: Vector3D = directLight(ri, phit)
 
 
-    val cosTheta$ = tdir.dotProduct(light.normal(uniformPointOnLight))
+    /**
+      * 非直接光照部分的计算。
+      * 1. phit点朝着light随机发射一根光线（uniform hemisphere sample）
+      * 2. 计算这根光线的反射（折射）方向，然后递归追踪，如果这条光线既有折射也有反射，那么根据fresnel概率性选择一个方向。
+      * 3. 然后加总计算
+      */
+    lazy val indr = indirLight(ri, phit, 8)
 
-    val ppr = 0.7f
-
-    val c: Vector3D = cosTheta$ match {
-      case v if v > 0 && rayIntersections.size > 0 =>
-        val cosTheta = FastMath.max(-tdir.dotProduct(ri.obj.normal(phit)), 0)
-
-        val fr = ri.obj.color
-        val liMultiFr = Utils.multi(fr scalarMultiply 255, light.color scalarMultiply 255) scalarMultiply cosTheta scalarMultiply cosTheta$
-        val dirLight = liMultiFr scalarMultiply (1f / (uniformPointOnLight distanceSq phit)) scalarMultiply (light.surfaceArea / 32)
-
-
-        val indirLight = Random.nextDouble() match {
-          case v if v > ppr => Vector3D.ZERO
-          case _ =>
-            val u = Random.nextDouble()
-            val v = Random.nextDouble()
-            val rt = Utils.unifromSampleHemisphere(u, v)
-            val costhetaaa = rt dotProduct ri.obj.normal(phit)
-            val randomDir = costhetaaa match {
-              case v if v > 0 => rt
-              case _ => rt negate
-            }
-
-
-            val cos = BSDFUtils.allCollision(phit, randomDir, scene.sceneObjs diff Set(ri.obj)).toArray
-            cos.size match {
-              case 0 => Vector3D.ZERO
-              case _ =>
-                val hitObj = MyRay.seekNearestObj(cos)
-
-                val q = phit add (randomDir scalarMultiply hitObj.distance)
-                import ray.common.Utils._
-                Utils.multi(shade(hitObj, q, randomDir),
-                  Phong.renderPix(phit, randomDir, hitObj.distance, light, hitObj.obj, .5, .5, hitObj.obj.color)
-                    .scalarMultiply(.02 * 1 / FastMath.PI)
-                ) scalarMultiply FastMath.abs(costhetaaa) scalarMultiply 1 / ppr
-            }
-
-
-        }
-
-
-        val r = dirLight add indirLight
-        //println(s"in: $indirLight")
-        r
-      case _ => Vector3D.ZERO
-    }
-
-    c
+    dirLight add indr
 
 
   }
 
+
+  private def indirLight(ri: RayIntersection, phit: Vector3D, depth: Int = 1): Vector3D = {
+    if (depth == 0) {
+      return Color.BLACK
+    }
+    ri.obj match {
+      case LightDraw.light =>
+        return ri.obj.color scalarMultiply 255
+      case _ =>
+    }
+    val ppr = .9f
+
+    ri.obj.surface match {
+      case ray.common.Surface.REGULAR =>
+        rn.nextDouble() match {
+          //case v if v > ppr => Vector3D.ZERO
+          case _ =>
+            val u = rn.nextDouble()
+            val v = rn1.nextDouble()
+            val uniformUnit = Utils.unifromSampleHemisphere(u, v)
+            val cosΘ = uniformUnit dotProduct ri.obj.normal(phit)
+            /**
+              * cosΘ < 90 degree
+              */
+            val randomDir = cosΘ match {
+              case v if v > 0 => uniformUnit
+              case _ => uniformUnit negate
+            }
+
+
+            val collisions = BSDFUtils.allCollision(phit, randomDir, scene.sceneObjs diff Set(ri.obj)).toArray
+            collisions.size match {
+              case 0 => Color.BLACK
+              case _ =>
+                val hitObj = MyRay.seekNearestObj(collisions)
+                if (hitObj.obj.eq(light)) {
+                  logger.info("fuck")
+                  return ri.obj.color scalarMultiply 255
+                }
+                val pphit = (hitObj.originDir scalarMultiply hitObj.distance) add phit
+                val ei = indirLight(hitObj, pphit, depth - 1) scalarMultiply FastMath.abs(cosΘ)
+                val brdf =.4 / FastMath.PI
+
+                ei scalarMultiply (FastMath.PI * 2f * brdf)
+            }
+        }
+    }
+  }
+
+  private def directLight(ri: RayIntersection, phit: Vector3D): Vector3D = {
+    val uniformPointOnLight = light.uniformSample()
+    val tdir = (phit subtract uniformPointOnLight) normalize
+    val bias = tdir scalarMultiply 1.1
+    val aPoint = uniformPointOnLight add bias
+
+    val objsExceptRi = scene.sceneObjs diff Set(ri.obj)
+    val maxDistance = light.center.distance(phit)
+    val notIntersectedObjs = objsExceptRi.takeWhile { object3D =>
+      val r = object3D.intersect(aPoint, tdir)
+      r._1 == false || r._2 > maxDistance
+    }
+
+    val cosTheta$ = tdir.dotProduct(light.normal(uniformPointOnLight))
+
+
+    val dirLight: Vector3D = cosTheta$ match {
+      case v if v > 0 && objsExceptRi.size - notIntersectedObjs.size == 0 =>
+        val cosTheta = FastMath.max(-tdir.dotProduct(ri.obj.normal(phit)), 0)
+
+        val fr = ri.obj.color
+        val liMultiFr = Utils.multi(fr scalarMultiply 255, light.color scalarMultiply 255) scalarMultiply cosTheta scalarMultiply cosTheta$
+        liMultiFr scalarMultiply (1f / (uniformPointOnLight distanceSq phit)) scalarMultiply (light.surfaceArea / 16)
+      case _ => Vector3D.ZERO
+    }
+    dirLight
+  }
 }
