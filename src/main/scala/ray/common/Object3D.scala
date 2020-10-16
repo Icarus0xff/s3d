@@ -21,4 +21,8 @@ trait Object3D{
 
   def intersect(o: Vector3D, dir: Vector3D): (Boolean, Double)
 
+  def surfaceArea(): Double
+
+  def uniformSample(): Vector3D
+
 }
