@@ -1,6 +1,5 @@
 package ray
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import org.apache.spark.sql.SparkSession
 import ray.algo.PathTracing
 import ray.common.Utils
@@ -13,9 +12,7 @@ object AppSpark{
 
   val xi = 0 until width toArray
   val yi = 0 until height toArray
-
-  val eye = new Vector3D(width / 2, height / 2, -700f)
-  val MAX_RANDOM_RAY = 64
+  val MAX_RANDOM_RAY = 128
 
   def main(args: Array[String]): Unit = {
     val pixs = for {

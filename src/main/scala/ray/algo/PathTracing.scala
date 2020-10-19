@@ -22,13 +22,14 @@ object PathTracing{
 
 
   def renderPix(xi: Int, yi: Int, maxRandomRay: Int, width: Int, height: Int): Int = {
-    val eye = new Vector3D(width / 2, height / 2, -700f)
+    val eye = new Vector3D(width / 2, height / 2, -900f)
 
     val colorPartial = for {
       _ <- 1 to maxRandomRay
       r = rn.nextDouble()
+      rr = rn1.nextDouble()
       xx = xi + r
-      yy = yi + r
+      yy = yi + rr
       randomDir: Vector3D = (new Vector3D(xx, yy, 0) subtract eye) normalize()
       rayIntersections: Array[RayIntersection] = MyRay.rayIntersections(eye, randomDir, scene.sceneObjs)
       ri = MyRay.seekNearestObj(rayIntersections)
@@ -61,6 +62,8 @@ object PathTracing{
 
     indr
 
+    //    dirLight
+
 
   }
 
@@ -73,40 +76,41 @@ object PathTracing{
     }
     val ppr = .9f
 
+    val hitNorm = ri.obj.normal(phit)
+    val inDir = ri.originDir
     ri.obj.surface match {
       case ray.common.Surface.REFRACTIVE =>
-        rn.nextDouble() match {
-          case v if v > ppr => Vector3D.ZERO
+        val (eta1: Double, eta2: Double) = BSDFUtils.computeEtaPair(inDir, hitNorm)
+        val refractDir = BSDFUtils.refract(inDir, hitNorm, 1, 1)
+        val bias = refractDir scalarMultiply 16
+
+        val collisions = BSDFUtils.allCollision(phit add bias, refractDir, scene.sceneObjs).toArray
+        collisions.size match {
+          case 0 => Color.BLACK
           case _ =>
-            val randomDir = BSDFUtils.reflect(ri.originDir, ri.obj.normal(phit))
-
-            val collisions = BSDFUtils.allCollision(phit, randomDir, scene.sceneObjs diff Set(ri.obj)).toArray
-            collisions.size match {
-              case 0 => Color.BLACK
-              case _ =>
-                val hitObj = MyRay.seekNearestObj(collisions)
-                if (hitObj.obj.eq(light)) {
-                  return ri.obj.color scalarMultiply 255
-                }
-                val pphit = (hitObj.originDir scalarMultiply hitObj.distance) add phit
-                val ei = indirLight(hitObj, pphit)
-
-                ei scalarMultiply (.4 * 1 / ppr)
+            val hitObj = MyRay.seekNearestObj(collisions)
+            if (hitObj.obj.eq(light)) {
+              return light.color scalarMultiply (255 * .1)
             }
+            val phit$ = (inDir scalarMultiply hitObj.distance) add phit
+            val ei = indirLight(hitObj, phit$)
+
+            ei
         }
+
       case ray.common.Surface.REFLECTIVE =>
         rn.nextDouble() match {
           case v if v > ppr => Vector3D.ZERO
           case _ =>
-            val randomDir = BSDFUtils.reflect(ri.originDir, ri.obj.normal(phit))
+            val reflectDir = BSDFUtils.reflect(inDir, hitNorm)
 
-            val collisions = BSDFUtils.allCollision(phit, randomDir, scene.sceneObjs diff Set(ri.obj)).toArray
+            val collisions = BSDFUtils.allCollision(phit, reflectDir, scene.sceneObjs diff Set(ri.obj)).toArray
             collisions.size match {
               case 0 => Color.BLACK
               case _ =>
                 val hitObj = MyRay.seekNearestObj(collisions)
                 if (hitObj.obj.eq(light)) {
-                  return ri.obj.color scalarMultiply 255
+                  return light.color scalarMultiply 255
                 }
                 val pphit = (hitObj.originDir scalarMultiply hitObj.distance) add phit
                 val ei = indirLight(hitObj, pphit)
@@ -116,12 +120,12 @@ object PathTracing{
         }
       case ray.common.Surface.REGULAR =>
         rn.nextDouble() match {
-          case v if v > ppr => Vector3D.ZERO
+          case v if v > ppr => Color.black
           case _ =>
             val u = rn.nextDouble()
             val v = rn1.nextDouble()
             val uniformUnit = Utils.unifromSampleHemisphere(u, v)
-            val cosΘ = uniformUnit dotProduct ri.obj.normal(phit)
+            val cosΘ = uniformUnit dotProduct hitNorm
             /**
               * cosΘ < 90 degree
               */
@@ -133,7 +137,7 @@ object PathTracing{
 
             val collisions = BSDFUtils.allCollision(phit, randomDir, scene.sceneObjs diff Set(ri.obj)).toArray
             collisions.size match {
-              case 0 => Color.BLACK
+              case 0 => Color.black
               case _ =>
                 val hitObj = MyRay.seekNearestObj(collisions)
                 if (hitObj.obj.eq(light)) {

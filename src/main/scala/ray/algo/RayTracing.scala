@@ -124,7 +124,7 @@ object RayTracing{
         val viewDir = (phit subtract eye) normalize
         val (eta1: Double, eta2: Double) = BSDFUtils.computeEtaPair(viewDir, hitNorm)
 
-        val rdir = refractionDir(phit subtract eye, hitNorm, eta1, eta2)
+        val rdir = BSDFUtils.refract(phit subtract eye, hitNorm, eta1, eta2)
 
         val cosInTheta1 = viewDir dotProduct hitNorm
         val cosOutTheta2 = rdir dotProduct hitNorm
@@ -174,7 +174,7 @@ object RayTracing{
 
     val (eta1: Double, eta2: Double) = BSDFUtils.computeEtaPair(viewDir, nearestIntersection.obj.normal(phit))
 
-    val refractDir = refractionDir(eyeToPhit, n, eta1, eta2)
+    val refractDir = BSDFUtils.refract(eyeToPhit, n, eta1, eta2)
 
     val bias = nearestIntersection.originDir scalarMultiply 16
 
@@ -188,15 +188,6 @@ object RayTracing{
 
     val iobjs = rayIntersections.toArray
     trace(phit, objs, iobjs, depth - 1, MyRay.seekNearestObj(iobjs), rayIntersections.isEmpty, nearestIntersection.obj.materialEta)
-  }
-
-  private def refractionDir(eyeToPhit: Vector3D, n: Vector3D, eta1: Double, eta2: Double): Vector3D = {
-    val tt = (eyeToPhit add (n scalarMultiply (n dotProduct eyeToPhit))) scalarMultiply (eta1 / eta2)
-    val tt1 = 1 - (eta1 * eta1) / (eta2 * eta2) * (1 - Math.pow(eyeToPhit dotProduct n, 2))
-    val tt2 = n scalarMultiply Math.sqrt(tt1)
-    val refractDir = (tt subtract tt2) normalize
-
-    refractDir
   }
 
 
