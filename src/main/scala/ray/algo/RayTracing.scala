@@ -158,7 +158,7 @@ object RayTracing{
   private def computeReflection(objs: Set[Object3D], depth: Int, nearestIntersection: RayIntersection, phit: Vector3D,
                                 n: Vector3D): Color = {
     import ray.common.Utils._
-    val reflect = nearestIntersection.originDir.subtract(n scalarMultiply (2 * (n dotProduct nearestIntersection.originDir)))
+    val reflect = BSDFUtils.reflect(nearestIntersection.originDir, n)
 
     val rayIntersections = MyRay.intersect(phit, reflect, objs, Set(nearestIntersection.obj))
 

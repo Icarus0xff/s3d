@@ -15,7 +15,7 @@ object AppSpark{
   val yi = 0 until height toArray
 
   val eye = new Vector3D(width / 2, height / 2, -700f)
-  val MAX_RANDOM_RAY = 512
+  val MAX_RANDOM_RAY = 64
 
   def main(args: Array[String]): Unit = {
     val pixs = for {
@@ -26,7 +26,7 @@ object AppSpark{
     }
 
     val spark = SparkSession.builder()
-      //      .config("spark.master", "local[*]")
+//      .config("spark.master", "local[*]")
       .getOrCreate()
 
     import org.apache.spark.sql.functions.udf

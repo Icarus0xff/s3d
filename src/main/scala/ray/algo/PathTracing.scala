@@ -35,8 +35,7 @@ object PathTracing{
     } yield {
       val phit = eye add (randomDir scalarMultiply ri.distance)
 
-      val c = shade(ri, phit, 4) scalarMultiply (1f / maxRandomRay)
-      logger.info(c)
+      val c = shade(ri, phit) scalarMultiply (1f / maxRandomRay) scalarMultiply 2 * FastMath.PI
       c
     }
 
@@ -48,7 +47,7 @@ object PathTracing{
 
   import ray.common.Utils._
 
-  private def shade(ri: RayIntersection, phit: Vector3D, depth: Int): Vector3D = {
+  private def shade(ri: RayIntersection, phit: Vector3D) = {
     lazy val dirLight: Vector3D = directLight(ri, phit)
 
 
@@ -58,18 +57,15 @@ object PathTracing{
       * 2. 计算这根光线的反射（折射）方向，然后递归追踪，如果这条光线既有折射也有反射，那么根据fresnel概率性选择一个方向。
       * 3. 然后加总计算
       */
-    lazy val indr = indirLight(ri, phit, 8)
+    lazy val indr = indirLight(ri, phit)
 
-    dirLight add indr
+    indr
 
 
   }
 
 
-  private def indirLight(ri: RayIntersection, phit: Vector3D, depth: Int = 1): Vector3D = {
-    if (depth == 0) {
-      return Color.BLACK
-    }
+  private def indirLight(ri: RayIntersection, phit: Vector3D): Vector3D = {
     ri.obj match {
       case LightDraw.light =>
         return ri.obj.color scalarMultiply 255
@@ -78,9 +74,49 @@ object PathTracing{
     val ppr = .9f
 
     ri.obj.surface match {
+      case ray.common.Surface.REFRACTIVE =>
+        rn.nextDouble() match {
+          case v if v > ppr => Vector3D.ZERO
+          case _ =>
+            val randomDir = BSDFUtils.reflect(ri.originDir, ri.obj.normal(phit))
+
+            val collisions = BSDFUtils.allCollision(phit, randomDir, scene.sceneObjs diff Set(ri.obj)).toArray
+            collisions.size match {
+              case 0 => Color.BLACK
+              case _ =>
+                val hitObj = MyRay.seekNearestObj(collisions)
+                if (hitObj.obj.eq(light)) {
+                  return ri.obj.color scalarMultiply 255
+                }
+                val pphit = (hitObj.originDir scalarMultiply hitObj.distance) add phit
+                val ei = indirLight(hitObj, pphit)
+
+                ei scalarMultiply (.4 * 1 / ppr)
+            }
+        }
+      case ray.common.Surface.REFLECTIVE =>
+        rn.nextDouble() match {
+          case v if v > ppr => Vector3D.ZERO
+          case _ =>
+            val randomDir = BSDFUtils.reflect(ri.originDir, ri.obj.normal(phit))
+
+            val collisions = BSDFUtils.allCollision(phit, randomDir, scene.sceneObjs diff Set(ri.obj)).toArray
+            collisions.size match {
+              case 0 => Color.BLACK
+              case _ =>
+                val hitObj = MyRay.seekNearestObj(collisions)
+                if (hitObj.obj.eq(light)) {
+                  return ri.obj.color scalarMultiply 255
+                }
+                val pphit = (hitObj.originDir scalarMultiply hitObj.distance) add phit
+                val ei = indirLight(hitObj, pphit)
+
+                ei scalarMultiply (.4 * 1 / ppr)
+            }
+        }
       case ray.common.Surface.REGULAR =>
         rn.nextDouble() match {
-          //case v if v > ppr => Vector3D.ZERO
+          case v if v > ppr => Vector3D.ZERO
           case _ =>
             val u = rn.nextDouble()
             val v = rn1.nextDouble()
@@ -101,14 +137,13 @@ object PathTracing{
               case _ =>
                 val hitObj = MyRay.seekNearestObj(collisions)
                 if (hitObj.obj.eq(light)) {
-                  logger.info("fuck")
                   return ri.obj.color scalarMultiply 255
                 }
                 val pphit = (hitObj.originDir scalarMultiply hitObj.distance) add phit
-                val ei = indirLight(hitObj, pphit, depth - 1) scalarMultiply FastMath.abs(cosΘ)
+                val ei = indirLight(hitObj, pphit) scalarMultiply FastMath.abs(cosΘ)
                 val brdf =.4 / FastMath.PI
 
-                ei scalarMultiply (FastMath.PI * 2f * brdf)
+                ei scalarMultiply (FastMath.PI * 2f * brdf * 1 / ppr)
             }
         }
     }
@@ -136,7 +171,7 @@ object PathTracing{
 
         val fr = ri.obj.color
         val liMultiFr = Utils.multi(fr scalarMultiply 255, light.color scalarMultiply 255) scalarMultiply cosTheta scalarMultiply cosTheta$
-        liMultiFr scalarMultiply (1f / (uniformPointOnLight distanceSq phit)) scalarMultiply (light.surfaceArea / 16)
+        liMultiFr scalarMultiply (1f / (uniformPointOnLight distanceSq phit)) scalarMultiply (light.surfaceArea / 2048)
       case _ => Vector3D.ZERO
     }
     dirLight

@@ -158,5 +158,7 @@ object BSDFUtils{
 
   case class IntersectResult(is: Boolean, t0: Double, t1: Double)
 
-
+  def reflect(dir: Vector3D, n: Vector3D): Vector3D = {
+    dir.subtract(n scalarMultiply (2 * (n dotProduct dir)))
+  }
 }
