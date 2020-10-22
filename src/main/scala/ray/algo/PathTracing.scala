@@ -81,18 +81,37 @@ object PathTracing{
     ri.obj.surface match {
       case ray.common.Surface.REFRACTIVE =>
         val (eta1: Double, eta2: Double) = BSDFUtils.computeEtaPair(inDir, hitNorm)
-        val refractDir = BSDFUtils.refract(inDir, hitNorm, 1, 1)
-        val bias = refractDir scalarMultiply 16
+        val refractDir = BSDFUtils.refract(inDir, hitNorm)
+        if (refractDir.isNaN) {
+          logger.info(s"bug: $refractDir $inDir $hitNorm $eta1 $eta2")
+          System.exit(1)
+        }
+        val bias = ri.originDir scalarMultiply 16
 
         val collisions = BSDFUtils.allCollision(phit add bias, refractDir, scene.sceneObjs).toArray
         collisions.size match {
           case 0 => Color.BLACK
           case _ =>
+            rn.nextDouble() match {
+              case v if v > ppr => return Color.black
+              case _ =>
+            }
             val hitObj = MyRay.seekNearestObj(collisions)
+            logger.info(s"${hitObj.obj} $refractDir d: ${hitObj.distance} phit: ${phit add bias}")
             if (hitObj.obj.eq(light)) {
               return light.color scalarMultiply (255 * .1)
             }
-            val phit$ = (inDir scalarMultiply hitObj.distance) add phit
+
+
+            /**
+              * please debug here!
+              */
+//            if (hitObj.distance < 0.01) {
+//              return hitObj.obj.color scalarMultiply 255
+//            }
+
+
+            val phit$ = (refractDir scalarMultiply hitObj.distance) add phit
             val ei = indirLight(hitObj, phit$)
 
             ei

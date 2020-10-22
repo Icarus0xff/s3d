@@ -10,17 +10,17 @@ import ray.common._
 object LightDraw{
 
 
-  val big = Sphere(new Vector3D(1600, 940, 600f), 200f, new Vector3D(.5, .5, 0), surface = Surface.REGULAR,
+  val big = Sphere(new Vector3D(1600, 1000, 600f), 200f, new Vector3D(.9, .5, 0), surface = Surface.REGULAR,
     materialEta = MaterialEta.GLASS)
 
-  val middle = Sphere(new Vector3D(600, 940, 700f), 256f, new Vector3D(.6, .5, .9), surface = Surface.REGULAR,
+  val middle = Sphere(new Vector3D(600, 990, 700f), 256f, new Vector3D(.6, .5, .9), surface = Surface.REGULAR,
     materialEta = MaterialEta.GLASS)
 
-  val small = Sphere(new Vector3D(1200, 1100, 100f), 100f, new Vector3D(.5, .1, 0), surface = Surface.REFRACTIVE,
+  val small = Sphere(new Vector3D(1000, 1100, 100f), 150f, new Vector3D(.5, .1, 0), surface = Surface.REFRACTIVE,
     materialEta = MaterialEta.GLASS)
 
 
-  val light = Sphere(new Vector3D(1000, 0, -600f), 800, new Vector3D(1, 1, 1))
+  val light = Sphere(new Vector3D(800, -600, 700f), 600, new Vector3D(1, 1, 1))
 
 
   val planeLeft = MyPlane(plane = new Plane(new Vector3D(1, 0, 0), new Vector3D(0, -800, 0)), color = new Vector3D(.5, .5, .5))

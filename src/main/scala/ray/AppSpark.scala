@@ -12,7 +12,7 @@ object AppSpark{
 
   val xi = 0 until width toArray
   val yi = 0 until height toArray
-  val MAX_RANDOM_RAY = 128
+  val MAX_RANDOM_RAY = 64
 
   def main(args: Array[String]): Unit = {
     val pixs = for {
